@@ -1,2 +1,5 @@
 # Debugging files generated from main code
 /debugging/*
+
+# vscode config files
+/vscode/*
