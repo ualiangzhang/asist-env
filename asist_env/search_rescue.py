@@ -11,12 +11,13 @@ N_CRIT_VICTIMS = 3
 N_NONCRIT_VICTIMS = 7
 
 # TODO: How to incorporate these constants in the environment?
-# PLAYER_SPEED = 1
-# TIME = 600
+PLAYER_SPEED = 1
+TIME = 600
 
 # TODO: add reward/penalty constants?
 
 
+# TODO: "zones" instead of one big "hallway"/room 0?
 class Layout: 
     """
     Layout of the building, represented in a graph data structure. Each room is 
@@ -80,11 +81,20 @@ class Layout:
         pass
 
 
-# TODO: player class. init with location within the graph (for now it will be room 0)
-# also init with speed variable
-# Player wants a move function that movesaccording to the directive passed by arg - see youtube tutorial
+class Agent:
+    """
+    Agent class. Init with a starting location in the Layout (i.e. room label)
+    """
+    def __init__(self):
+        self.pos = 0
+        self.speed = PLAYER_SPEED
+
+    # TODO: Move player according to a directive passed by arg.
+    def move(self):
+        pass
+
 
 env = Layout()
-env.generate_plot()
+#env.generate_plot()
 
 # TODO: how to handle observations? information as to where the victims are located?
