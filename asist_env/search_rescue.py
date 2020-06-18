@@ -89,8 +89,8 @@ class Agent:
         self.pos = 0
         self.speed = PLAYER_SPEED
 
-    # TODO: Move player according to a directive passed by arg.
-    def move(self):
+    # TODO: Move player according to information passed by args.
+    def move(self, current_room):
         pass
 
 
