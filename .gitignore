@@ -3,3 +3,4 @@
 
 # vscode config files
 /vscode/*
+/asist-env/vscode/*
