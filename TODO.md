@@ -1,6 +1,6 @@
 ## TODO
 
-1. Model the Sparky map layout
+1. Handle loading data from Sparky map or Falcon map.
 
 2. Both rooms and doors/portals should be represented as nodes.
     - rooms are "volumes" or "zones"
@@ -9,7 +9,7 @@
 
 3. Implement a coordinate system
     - Use the coordinates to define the corners of each room.
-    - include location variables to describe agent's current position, victim locations, portal locations
+    - include location variables to describe agent's current position, victim locations
     - use coordinates to represent distance between nodes
 
 4. Implement a time component
