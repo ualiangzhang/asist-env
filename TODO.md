@@ -4,7 +4,7 @@
 
 2. Both rooms and doors/portals should be represented as nodes.
     - rooms are "volumes" or "zones"
-    - portals are "fixed points"
+    - portals are also zones
     - all room nodes are connected by portal nodes
 
 3. Implement a coordinate system
