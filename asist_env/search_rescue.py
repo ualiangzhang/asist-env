@@ -1,3 +1,6 @@
+# TODO: Remove this file eventually, no longer needed
+
+
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
@@ -95,6 +98,7 @@ class Agent:
 
 
 env = Layout()
+print(env.G.nodes.data())
 #env.generate_plot()
 
 # TODO: how to handle observations? information as to where the victims are located?
