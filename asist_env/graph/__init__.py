@@ -1,10 +1,11 @@
-import networkx
+import networkx as nx
 from .Nodes import *
 from collections.abc import Iterable
 from math import sqrt
+import numpy as np
 
 
-class Graph(networkx.Graph):
+class Graph(nx.Graph):
     """
         A networkx Graph
     """
@@ -42,8 +43,8 @@ class Graph(networkx.Graph):
         assert id is None or isinstance(id, str)
         assert name is None or isinstance(name, str)
         assert isinstance(victim_type, VictimType)
-        assert location is None or isinstance(location, tuple) and \
-               len(location) == 2 and all(isinstance(l, float) for l in location)
+        assert location is None or isinstance(location, tuple) and len(location) == 2 \
+               and all(isinstance(l, float) or isinstance(l, int) for l in location)
 
         node_id = "V"
 
@@ -80,8 +81,8 @@ class Graph(networkx.Graph):
         """
         assert id is None or isinstance(id, str)
         assert name is None or isinstance(name, str)
-        assert location is None or isinstance(location, tuple) and \
-               len(location) == 2 and all(isinstance(l, float) for l in location)
+        assert location is None or isinstance(location, tuple) and len(location) == 2 \
+               and all(isinstance(l, float) or isinstance(l, int) for l in location)
         assert isinstance(connected_room_ids, tuple) and all(isinstance(r, str) for r in connected_room_ids)
 
         node_id = id if id is not None else "P" + str(len(self.portal_list))
@@ -91,6 +92,7 @@ class Graph(networkx.Graph):
 
         node_1 = PortalNode(node_id_1, name, node_id_2, location)
         node_2 = PortalNode(node_id_2, name, node_id_1, location)
+        self.add_edge(node_1, node_2)
 
         self.portal_list.append((node_1, node_2))
         self.nodes_list.append(node_1)
@@ -101,7 +103,7 @@ class Graph(networkx.Graph):
         return node_1, node_2
 
 
-    def add_room(self, id=None, name=None, location=None):
+    def add_room(self, id=None, name=None, location=None, victims=None):
         """ Add Room Node
 
         :param id: the room id, if id not give, the method will auto generate one
@@ -111,11 +113,13 @@ class Graph(networkx.Graph):
         """
         assert id is None or isinstance(id, str)
         assert name is None or isinstance(name, str)
-        assert location is None or isinstance(location, tuple) and \
-               len(location) == 2 and all(isinstance(l, float) for l in location)
+        assert victims is None or isinstance(victims, list) and \
+               all(v is None or isinstance(v, str) for v in victims)
+        assert location is None or isinstance(location, tuple) and len(location) == 2 \
+               and all(isinstance(l, float) or isinstance(l, int) for l in location)
 
         node_id = id if id is not None else "R" + str(len(self.room_list))
-        node = RoomNode(node_id, name, location)
+        node = RoomNode(node_id, name, location, victims)
 
         self.room_list.append(node)
         self.nodes_list.append(node)
@@ -141,11 +145,11 @@ class Graph(networkx.Graph):
         # connecting portal with all the victims in side the adjacent room
         for v_id in room_1.victim_list:
             victim = self.id2node[v_id]
-            self.add_edge(room_1, victim, weight=self.euclidean_distances(room_1.loc, victim.loc))
+            self.add_edge(portal_1, victim, weight=self.euclidean_distances(room_1.loc, victim.loc))
 
         for v_id in room_2.victim_list:
             victim = self.id2node[v_id]
-            self.add_edge(room_2, victim, weight=self.euclidean_distances(room_2.loc, victim.loc))
+            self.add_edge(portal_2, victim, weight=self.euclidean_distances(room_2.loc, victim.loc))
 
 
     def link_victims_in_room(self, room, list_of_victim_id):
@@ -158,7 +162,6 @@ class Graph(networkx.Graph):
         assert isinstance(room, RoomNode)
         assert isinstance(list_of_victim_id, list) and all(isinstance(v, str) for v in list_of_victim_id)
 
-        room.add_victim(list_of_victim_id)
         for v_id in list_of_victim_id:
             victim = self.id2node[v_id]
             self.add_edge(room, victim, weight=self.euclidean_distances(room.loc, victim.loc))
@@ -170,6 +173,31 @@ class Graph(networkx.Graph):
                 self.add_edge(victim_1, victim_2, weight=self.euclidean_distances(victim_1.loc, victim_2.loc))
 
         return room
+
+    def better_layout(self):
+        layout_dict = dict()
+        for node in self.nodes_list:
+            loc = np.array([node.loc[0], node.loc[1]],dtype=np.float64)
+            layout_dict[node] = loc
+        return layout_dict
+
+    def better_color(self):
+        color_map = []
+        for node in self:
+            if node.type == NodeType.Victim:
+                if node.victim_type == VictimType.Green:
+                    color_map.append('green')
+                if node.victim_type == VictimType.Yellow:
+                    color_map.append('yellow')
+                if node.victim_type == VictimType.Dead:
+                    color_map.append('red')
+                if node.victim_type == VictimType.Safe:
+                    color_map.append('gray')
+            if node.type == NodeType.Portal:
+                color_map.append('orange')
+            if node.type == NodeType.Room:
+                color_map.append('lightblue')
+        return color_map
 
 
     def get_neighbor(self):

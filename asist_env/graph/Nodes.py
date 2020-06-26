@@ -51,11 +51,11 @@ class VictimNode(Node):
 
 
 class RoomNode(Node):
-    def __init__(self, id, name, location):
+    def __init__(self, id, name, location, victims):
         super().__init__(id, name)
         self.type = NodeType.Room
         self.loc = location
-        self.victim_list = []
+        self.victim_list = victims
 
     def add_victim(self, victim_id):
         assert isinstance(victim_id, str) or isinstance(victim_id, list) and \
