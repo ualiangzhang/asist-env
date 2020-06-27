@@ -1,7 +1,7 @@
 import networkx as nx
 from .Nodes import *
 from collections.abc import Iterable
-from math import sqrt
+import math
 import numpy as np
 
 
@@ -92,7 +92,7 @@ class Graph(nx.Graph):
 
         node_1 = PortalNode(node_id_1, name, node_id_2, location)
         node_2 = PortalNode(node_id_2, name, node_id_1, location)
-        self.add_edge(node_1, node_2)
+        self.add_edge(node_1, node_2, weight=1)
 
         self.portal_list.append((node_1, node_2))
         self.nodes_list.append(node_1)
@@ -174,30 +174,77 @@ class Graph(nx.Graph):
 
         return room
 
-    def better_layout(self):
+    def better_layout(self, with_spring=False, portal_sep=1.5):
         layout_dict = dict()
+        fix_node = list()
         for node in self.nodes_list:
             loc = np.array([node.loc[0], node.loc[1]],dtype=np.float64)
             layout_dict[node] = loc
-        return layout_dict
+
+        if with_spring:
+            for node in self.nodes_list:
+                fix = True
+                for nei in self.neighbors(node):
+                    if self.euclidean_distances(node.loc, nei.loc) < 2:
+                        fix = False
+                if fix:
+                    fix_node.append(node)
+
+        # separate overlapping portal
+        for portal_pair in self.portal_list:
+            portal_1, portal_2 = portal_pair
+            room_1 = self.id2node[portal_1.get_connected_room_id()]
+            room_2 = self.id2node[portal_2.get_connected_room_id()]
+            dist_1 = self.euclidean_distances(portal_1.loc, room_1.loc)
+            dist_2 = self.euclidean_distances(portal_2.loc, room_2.loc)
+            if dist_1 > dist_2:
+                pos_1 = self.shift_distance(portal_sep, portal_1.loc, room_1.loc)
+                layout_dict[portal_1] = np.array(pos_1)
+            else:
+                pos_2 = self.shift_distance(portal_sep, portal_2.loc, room_2.loc)
+                layout_dict[portal_2] = np.array(pos_2)
+
+
+        return layout_dict, fix_node
 
     def better_color(self):
         color_map = []
         for node in self:
             if node.type == NodeType.Victim:
                 if node.victim_type == VictimType.Green:
-                    color_map.append('green')
+                    color_map.append('limegreen')
                 if node.victim_type == VictimType.Yellow:
                     color_map.append('yellow')
                 if node.victim_type == VictimType.Dead:
-                    color_map.append('red')
+                    color_map.append('tomato')
                 if node.victim_type == VictimType.Safe:
-                    color_map.append('gray')
+                    color_map.append('silver')
             if node.type == NodeType.Portal:
-                color_map.append('orange')
+                color_map.append('goldenrod')
             if node.type == NodeType.Room:
-                color_map.append('lightblue')
+                color_map.append('lightskyblue')
         return color_map
+
+    def flip_z(self, pos):
+        # flip the graph along z-axis
+        assert isinstance(pos, dict)
+        for p in pos:
+            pos[p][0] *= -1
+        return pos
+
+    def flip_x(self, pos):
+        # flip the graph along x-axis
+        assert isinstance(pos, dict)
+        for p in pos:
+            pos[p][1] *= -1
+        return pos
+
+    def clockwise90(self, pos):
+        # rotate the graph clock-wise 90 degrees
+        assert isinstance(pos, dict)
+        for p in pos:
+            pos[p][0], pos[p][1] = pos[p][1], -pos[p][0]
+        return pos
 
 
     def get_neighbor(self):
@@ -206,5 +253,22 @@ class Graph(nx.Graph):
     @staticmethod
     def euclidean_distances(pos1, pos2):
         assert isinstance(pos1, tuple) and isinstance(pos2, tuple)
-        return max(1, int(sqrt((pos2[0] - pos1[0]) ** 2 + (pos2[1] - pos1[1]) ** 2)))
+        return max(1, math.ceil(math.sqrt((pos2[0] - pos1[0]) ** 2 + (pos2[1] - pos1[1]) ** 2)))
+
+    def shift_distance(self, shift, pos1, pos2):
+        """ Shift pos1 the distance "shift" to pos2
+        :param shift: the distance want to shift
+        :return: pos1 after shift
+        """
+        assert isinstance(shift, int) or isinstance(shift, float)
+        assert isinstance(pos1, tuple) and isinstance(pos2, tuple)
+
+        dist = self.euclidean_distances(pos1, pos2)
+        if shift >= dist:
+            return pos1
+
+        ratio = shift / dist
+        new_x = pos1[0] + ratio * (pos2[0] - pos1[0])
+        new_z = pos1[1] + ratio * (pos2[1] - pos1[1])
+        return new_x, new_z
 
