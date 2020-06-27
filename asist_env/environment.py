@@ -43,6 +43,10 @@ class AsistEnvRandGen:
 class AsistEnv:
     def __init__(self):
         self.graph = MapParser.parse_map_data()
+        self.start = graph["Start"]
+
+    def reset(self):
+        pass
 
     def step(self):
         pass
@@ -50,5 +54,3 @@ class AsistEnv:
     def action_space(self):
         pass
 
-    def reset(self):
-        pass

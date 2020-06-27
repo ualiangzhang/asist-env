@@ -31,6 +31,10 @@ class Graph(nx.Graph):
             VictimType.Dead: self.dead_victim_list,
         }
 
+    def __getitem__(self, id_key):
+        # get node by id
+        return self.id2node[id_key]
+
     def add_victim(self, victim_type, id=None, name=None, location=None):
         """ Register a victim node to graph and append the corresponding lists
 
@@ -90,8 +94,10 @@ class Graph(nx.Graph):
         node_id_1 = node_id + "-" + connected_room_ids[0]
         node_id_2 = node_id + "-" + connected_room_ids[1]
 
-        node_1 = PortalNode(node_id_1, name, node_id_2, location)
-        node_2 = PortalNode(node_id_2, name, node_id_1, location)
+        node_1 = PortalNode(node_id_1, name, location)
+        node_2 = PortalNode(node_id_2, name, location)
+        node_1.link_portal(node_2)
+        node_2.link_portal(node_1)
         self.add_edge(node_1, node_2, weight=1)
 
         self.portal_list.append((node_1, node_2))
@@ -173,6 +179,20 @@ class Graph(nx.Graph):
                 self.add_edge(victim_1, victim_2, weight=self.euclidean_distances(victim_1.loc, victim_2.loc))
 
         return room
+
+    def close_all_portal(self):
+        for portal_pair in self.portal_list:
+            portal_pair[0].close_portal()
+
+    def open_all_portal(self):
+        for portal_pair in self.portal_list:
+            portal_pair[0].open_portal()
+
+    def kill_all_yellow_victims(self):
+        for yellow_victim in self.yellow_victim_list:
+            yellow_victim.yellow_death()
+        self.dead_victim_list += self.yellow_victim_list
+        self.yellow_victim_list = []
 
     def better_layout(self, with_spring=False, portal_sep=1.5):
         layout_dict = dict()

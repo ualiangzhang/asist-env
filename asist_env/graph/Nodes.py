@@ -31,15 +31,26 @@ class PortalNode(Node):
         portal Node id has format PID-RID (Portal ID - Room ID)
         Portal also comes in pairs, linked_portal_id is the portal it is connecting
     """
-    def __init__(self, id, name, linked_portal_id, location):
-        assert linked_portal_id is None or isinstance(linked_portal_id, str)
+    def __init__(self, id, name, location):
         super().__init__(id, name)
         self.type = NodeType.Portal
-        self.linked_portal_id = linked_portal_id
         self.loc = location
+        self.is_open = False
+
+    def link_portal(self, other):
+        assert isinstance(other, PortalNode)
+        self.linked_portal = other
 
     def get_connected_room_id(self):
         return self.id.split("-")[1]
+
+    def open_portal(self):
+        self.is_open = True
+        self.linked_portal.is_open = True
+
+    def close_portal(self):
+        self.is_open = False
+        self.linked_portal.is_open = False
 
 class VictimNode(Node):
     def __init__(self, id, name, victim_type, location):
@@ -49,6 +60,26 @@ class VictimNode(Node):
         self.victim_type = victim_type
         self.loc = location
 
+    def yellow_death(self):
+        # Simulate the death of yellow victims, turns them to red
+        assert self.victim_type == VictimType.Yellow, \
+            "Only Yellow Victim could die, please check the victim type"
+        self.victim_type = VictimType.Dead
+
+    def triage(self):
+        """ Simulate the victim triage process, can only triage Yellow and Green
+        :return: A tuple of time cost and score reward (Time Cost, Reward)
+        """
+        if self.victim_type == VictimType.Safe or self.victim_type == VictimType.Dead:
+            return 0, 0
+        # TODO: Need to discuss cost and reward here
+        elif self.victim_type == VictimType.Green:
+            self.victim_type = VictimType.Safe
+            return 10, 10
+        else: # A Yellow Victim
+            self.victim_type = VictimType.Safe
+            return 15, 30
+
 
 class RoomNode(Node):
     def __init__(self, id, name, location, victims):
@@ -56,9 +87,16 @@ class RoomNode(Node):
         self.type = NodeType.Room
         self.loc = location
         self.victim_list = victims
+        self.light_on = False
 
     def add_victim(self, victim_id):
         assert isinstance(victim_id, str) or isinstance(victim_id, list) and \
                all(isinstance(v, str) for v in victim_id)
         self.victim_list += victim_id
+
+    def turn_light_on(self):
+        self.light_on = True
+
+    def turn_light_off(self):
+        self.light_on = False
 
