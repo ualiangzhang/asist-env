@@ -43,7 +43,10 @@ class AsistEnvRandGen:
 class AsistEnv:
     def __init__(self):
         self.graph = MapParser.parse_map_data()
-        self.start = graph["Start"]
+        self.curr_pos = graph["Start"]
+        self.total_cost = 0
+        self.reward = 0
+        # TODO: Add Memory (Graph)
 
     def reset(self):
         pass
@@ -51,6 +54,31 @@ class AsistEnv:
     def step(self):
         pass
 
-    def action_space(self):
+    def get_action_space(self):
+        choice_count = 0
+        victim_list = []
+        portal_list = []
+        the_room = None
+        for n in self.graph.neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Portal:
+                portal_list.append(n)
+            elif n.type == graph.NodeType.Victim:
+                victim_list.append(n)
+            elif n.type == graph.NodeType.Room:
+                the_room = n
+
+
+
+    def get_victims_in_room(self):
         pass
+
+    def get_device_info(self):
+        pass
+
+    def console_play(self):
+        while True:
+            print("Your Current Position:", str(self.curr_pos))
+
+            action_str = ""
+            act = input("Choose Action:\n" + action_str)
 

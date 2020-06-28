@@ -44,6 +44,11 @@ class PortalNode(Node):
     def get_connected_room_id(self):
         return self.id.split("-")[1]
 
+    def is_same_portal(self, other):
+        # return True if the two portals are linked
+        assert isinstance(other, PortalNode)
+        return other.id.split("-")[0] == self.id.split("-")[0]
+
     def open_portal(self):
         self.is_open = True
         self.linked_portal.is_open = True

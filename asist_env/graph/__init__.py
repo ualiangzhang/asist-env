@@ -267,8 +267,8 @@ class Graph(nx.Graph):
         return pos
 
 
-    def get_neighbor(self):
-        pass
+    def get_neighbors(self, node):
+        return self.neighbors(node)
 
     @staticmethod
     def euclidean_distances(pos1, pos2):
