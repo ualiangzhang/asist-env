@@ -35,6 +35,9 @@ class MapParser:
         for portal_pair in g.portal_list:
             g.connect_portal_to_rooms(portal_pair)
 
+        for portal_pair in g.portal_list:
+            g.connected_portals_to_portals(portal_pair)
+
         return g
 
 class AsistEnvRandGen:
@@ -45,6 +48,7 @@ class AsistEnv:
     def __init__(self, portal_data, room_data, victim_data):
         self.graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
         self.curr_pos = self.graph["Start"]
+        self.prev_pos = None
         self.total_cost = 0
         self.reward = 0
         # TODO: Add Memory (Graph)
@@ -61,6 +65,7 @@ class AsistEnv:
             action_reward += triage_reward
         self.total_cost += action_cost
         self.reward += action_reward
+        self.prev_pos = self.curr_pos
         self.curr_pos = action
 
     def get_action_space(self):
@@ -78,16 +83,28 @@ class AsistEnv:
                 if self.curr_pos.type == graph.NodeType.Portal and \
                         n.is_same_portal(self.curr_pos):
                     portal_enter_list.append(n)
-                    portal_enter_list_str.append("Enter Portal {} to Portal {}".format(str(self.curr_pos), str(n)))
+                    act_str = "Enter Portal {} to Portal {}".format(str(self.curr_pos), str(n))
+                    if n == self.prev_pos:
+                        act_str += " [Go Back]"
+                    portal_enter_list_str.append(act_str)
                 else:
                     portal_navigation_list.append(n)
-                    portal_navigation_list_str.append("Navigate to Portal {}".format(str(n)))
+                    act_str = "Navigate to Portal {}".format(str(n))
+                    if n == self.prev_pos:
+                        act_str += " [Go Back]"
+                    portal_navigation_list_str.append(act_str)
             elif n.type == graph.NodeType.Victim:
                 victim_list.append(n)
-                victim_list_str.append("Triage Victim {} ({})".format(str(n), n.get_type_str()))
+                act_str = "Triage Victim {} ({})".format(str(n), n.get_type_str())
+                if n == self.prev_pos:
+                    act_str += " [Go Back]"
+                victim_list_str.append(act_str)
             elif n.type == graph.NodeType.Room:
                 room_list.append(n)
-                room_list_str.append("Enter Room Center {}".format(str(n)))
+                act_str = "Enter Room Center {}".format(str(n))
+                if n == self.prev_pos:
+                    act_str += " [Go Back]"
+                room_list_str.append(act_str)
         action_space = portal_navigation_list + portal_enter_list + victim_list + room_list
         action_space_str = portal_navigation_list_str + portal_enter_list_str + victim_list_str + room_list_str
 
@@ -104,7 +121,9 @@ class AsistEnv:
 
     def console_play(self):
         while True:
+            print("============================================\n")
             print("Your Current Position:", str(self.curr_pos))
+            print("Your Previous Position:", str(self.prev_pos))
             print("Total Cost:", str(self.total_cost))
             print("Total Reward:", str(self.reward))
             print("Device Info:", self.get_device_info())
@@ -114,6 +133,8 @@ class AsistEnv:
             print("Possible Actions:")
             print("\n".join(str(idx) + ": " + act_str for idx, act_str in enumerate(action_space_str)))
             act = input("Choose an Action: ")
+            if act == "q":
+                break
             print()
             chosen_action = action_space[int(act)]
             self.step(chosen_action)

@@ -4,7 +4,6 @@ import matplotlib.animation
 import pandas as pd
 from pathlib import Path
 import networkx as nx
-matplotlib.use("TkAgg")
 
 # pos = nx.spring_layout(graph, k=0.9, iterations=3, pos=pos, fixed=fix, weight=3)
 
@@ -21,6 +20,7 @@ def plot_graph(graph, pos, weight_labels, save=None):
 
 
 def animate_graph(graph, pos, weight_labels):
+    matplotlib.use("TkAgg")
     # Animation update function
     def update(num):
         print(num)

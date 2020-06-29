@@ -133,8 +133,32 @@ class Graph(nx.Graph):
 
         return node
 
+    def link_victims_in_room(self, room, list_of_victim_id):
+        """ The First Linkage Function to run
+        Make a fully connected sub-graph of room nodes and victims node inside that room
+
+        :param room: the room Node
+        :param list_of_victim_id: the list of victim ids inside the room
+        :return: the room node
+        """
+        assert isinstance(room, RoomNode)
+        assert isinstance(list_of_victim_id, list) and all(isinstance(v, str) for v in list_of_victim_id)
+
+        for v_id in list_of_victim_id:
+            victim = self.id2node[v_id]
+            self.add_edge(room, victim, weight=self.euclidean_distances(room.loc, victim.loc))
+
+        for i in range(len(list_of_victim_id)):
+            for j in range(i+1, len(list_of_victim_id)):
+                victim_1 = self.id2node[list_of_victim_id[i]]
+                victim_2 = self.id2node[list_of_victim_id[j]]
+                self.add_edge(victim_1, victim_2, weight=self.euclidean_distances(victim_1.loc, victim_2.loc))
+
+        return room
+
     def connect_portal_to_rooms(self, portal_tuple):
-        """ Connect the portal to the two rooms it is adjacent to
+        """ The second Linkage Function to run
+        Connect the portal to the two rooms it is adjacent to
         :param portal_tuple: the two portals indicate two sides of the door
         """
         assert isinstance(portal_tuple, tuple) and len(portal_tuple) == 2 and \
@@ -157,28 +181,30 @@ class Graph(nx.Graph):
             victim = self.id2node[v_id]
             self.add_edge(portal_2, victim, weight=self.euclidean_distances(room_2.loc, victim.loc))
 
-
-    def link_victims_in_room(self, room, list_of_victim_id):
-        """ Make a fully connected sub-graph of room nodes and victims node inside that room
-
-        :param room: the room Node
-        :param list_of_victim_id: the list of victim ids inside the room
-        :return: the room node
+    def connected_portals_to_portals(self, portal_tuple):
+        """ The third Linkage Function to run
+        Connect the portal to portals that is connected with the room it is adjacent to
+        :param portal_tuple: the two portals indicate two sides of the door
         """
-        assert isinstance(room, RoomNode)
-        assert isinstance(list_of_victim_id, list) and all(isinstance(v, str) for v in list_of_victim_id)
+        assert isinstance(portal_tuple, tuple) and len(portal_tuple) == 2 and \
+               all(isinstance(p, PortalNode) for p in portal_tuple)
 
-        for v_id in list_of_victim_id:
-            victim = self.id2node[v_id]
-            self.add_edge(room, victim, weight=self.euclidean_distances(room.loc, victim.loc))
+        portal_1, portal_2 = portal_tuple
 
-        for i in range(len(list_of_victim_id)):
-            for j in range(i+1, len(list_of_victim_id)):
-                victim_1 = self.id2node[list_of_victim_id[i]]
-                victim_2 = self.id2node[list_of_victim_id[j]]
-                self.add_edge(victim_1, victim_2, weight=self.euclidean_distances(victim_1.loc, victim_2.loc))
+        # Get the two adjacent rooms
+        room_1 = self.id2node[portal_1.get_connected_room_id()]
+        room_2 = self.id2node[portal_2.get_connected_room_id()]
 
-        return room
+        for n in self.get_neighbors(room_1):
+            if n.type == NodeType.Portal and n != portal_1 and not self.has_edge(n, portal_1):
+                self.add_edge(portal_1, n, weight=self.euclidean_distances(portal_1.loc, n.loc))
+
+        for n in self.get_neighbors(room_2):
+            if n.type == NodeType.Portal and n != portal_2 and not self.has_edge(n, portal_2):
+                self.add_edge(portal_2, n, weight=self.euclidean_distances(portal_2.loc, n.loc))
+
+    def get_neighbors(self, node):
+        return self.neighbors(node)
 
     def get_edge_cost(self, node1, node2):
         return self.get_edge_data(node1, node2)["weight"]
@@ -278,8 +304,7 @@ class Graph(nx.Graph):
         return pos
 
 
-    def get_neighbors(self, node):
-        return self.neighbors(node)
+
 
     @staticmethod
     def euclidean_distances(pos1, pos2):
