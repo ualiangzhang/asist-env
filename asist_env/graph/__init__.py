@@ -74,7 +74,7 @@ class Graph(nx.Graph):
 
         return node
 
-    def add_portal(self, connected_room_ids, id=None, name=None, location=None):
+    def add_portal(self, connected_room_ids, is_open, id=None, name=None, location=None):
         """ Add portal (pair)
 
         :param id: the portal id, if id not give, the method will auto generate one
@@ -94,8 +94,8 @@ class Graph(nx.Graph):
         node_id_1 = node_id + "-" + connected_room_ids[0]
         node_id_2 = node_id + "-" + connected_room_ids[1]
 
-        node_1 = PortalNode(node_id_1, name, location)
-        node_2 = PortalNode(node_id_2, name, location)
+        node_1 = PortalNode(node_id_1, name, location, is_open)
+        node_2 = PortalNode(node_id_2, name, location, is_open)
         node_1.link_portal(node_2)
         node_2.link_portal(node_1)
         self.add_edge(node_1, node_2, weight=1)

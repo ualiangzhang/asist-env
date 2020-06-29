@@ -31,11 +31,11 @@ class PortalNode(Node):
         portal Node id has format PID-RID (Portal ID - Room ID)
         Portal also comes in pairs, linked_portal_id is the portal it is connecting
     """
-    def __init__(self, id, name, location):
+    def __init__(self, id, name, location, is_open):
         super().__init__(id, name)
         self.type = NodeType.Portal
         self.loc = location
-        self.is_open = False
+        self.is_open = is_open
 
     def link_portal(self, other):
         assert isinstance(other, PortalNode)
