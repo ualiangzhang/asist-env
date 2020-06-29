@@ -32,7 +32,11 @@ class Graph(nx.Graph):
         }
 
     def __getitem__(self, id_key):
-        # get node by id
+        """ Get the node based on id.
+            Usage: graph["R202"] returns the node Room-202
+        :param id_key: the id of the node you want
+        :return: the actual node
+        """
         return self.id2node[id_key]
 
     def add_victim(self, victim_type, id=None, name=None, location=None):
@@ -204,34 +208,46 @@ class Graph(nx.Graph):
                 self.add_edge(portal_2, n, weight=self.euclidean_distances(portal_2.loc, n.loc))
 
     def get_neighbors(self, node):
+        # get neighbor nodes of a node
         return self.neighbors(node)
 
     def get_edge_cost(self, node1, node2):
+        # get the edge weight between two nodes
         return self.get_edge_data(node1, node2)["weight"]
 
     def close_all_portal(self):
+        # make all portals close
         for portal_pair in self.portal_list:
             portal_pair[0].close_portal()
 
     def open_all_portal(self):
+        # make all portals open
         for portal_pair in self.portal_list:
             portal_pair[0].open_portal()
 
     def kill_all_yellow_victims(self):
+        # kill all yellow victims by turning them VictimType.Dead
         for yellow_victim in self.yellow_victim_list:
             yellow_victim.yellow_death()
         self.dead_victim_list += self.yellow_victim_list
         self.yellow_victim_list = []
 
     def has_yellow_victim_in(self, room):
+        # whether a room contains any yellow victim, method used for the device
         assert isinstance(room, RoomNode)
         return any(self.id2node[n].victim_type == VictimType.Yellow for n in room.victim_list)
 
     def has_green_victim_in(self, room):
+        # whether a room contains any green victim, method used for the device
         assert isinstance(room, RoomNode)
         return any(self.id2node[n].victim_type == VictimType.Green for n in room.victim_list)
 
     def better_layout(self, with_spring=False, portal_sep=1.5):
+        """ Make the map layout adhere to the original coordinate layout
+        :param with_spring: Experimental, whether to use the networkx spring layout
+        :param portal_sep: the separation distance for portal pairs
+        :return: the graph layout dictionary, and the nodes that are fixed if with_spring is True
+        """
         layout_dict = dict()
         fix_node = list()
         for node in self.nodes_list:
@@ -261,10 +277,12 @@ class Graph(nx.Graph):
                 pos_2 = self.shift_distance(portal_sep, portal_2.loc, room_2.loc)
                 layout_dict[portal_2] = np.array(pos_2)
 
-
         return layout_dict, fix_node
 
     def better_color(self):
+        """ Color the nodes based on their types
+        :return: the color map used for plotting
+        """
         color_map = []
         for node in self:
             if node.type == NodeType.Victim:
@@ -303,11 +321,10 @@ class Graph(nx.Graph):
             pos[p][0], pos[p][1] = pos[p][1], -pos[p][0]
         return pos
 
-
-
-
     @staticmethod
     def euclidean_distances(pos1, pos2):
+        # calculate the euclidean distance between two nodes based the coordinate position
+        # the distance is at least 1
         assert isinstance(pos1, tuple) and isinstance(pos2, tuple)
         return max(1, math.ceil(math.sqrt((pos2[0] - pos1[0]) ** 2 + (pos2[1] - pos1[1]) ** 2)))
 
