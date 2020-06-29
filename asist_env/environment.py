@@ -1,5 +1,6 @@
 import graph
 import pandas as pd
+from pathlib import Path
 
 class MapParser:
 
@@ -41,9 +42,9 @@ class AsistEnvRandGen:
         pass
 
 class AsistEnv:
-    def __init__(self):
-        self.graph = MapParser.parse_map_data()
-        self.curr_pos = graph["Start"]
+    def __init__(self, portal_data, room_data, victim_data):
+        self.graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
+        self.curr_pos = self.graph["Start"]
         self.total_cost = 0
         self.reward = 0
         # TODO: Add Memory (Graph)
@@ -51,34 +52,83 @@ class AsistEnv:
     def reset(self):
         pass
 
-    def step(self):
-        pass
+    def step(self, action):
+        action_cost = self.graph.get_edge_cost(self.curr_pos, action)
+        action_reward = 0
+        if action.type == graph.NodeType.Victim:
+            triage_cost, triage_reward = action.triage()
+            action_cost += triage_cost
+            action_reward += triage_reward
+        self.total_cost += action_cost
+        self.reward += action_reward
+        self.curr_pos = action
 
     def get_action_space(self):
-        choice_count = 0
         victim_list = []
-        portal_list = []
-        the_room = None
+        portal_navigation_list = []
+        portal_enter_list = []
+        room_list = []
+
+        victim_list_str = []
+        portal_navigation_list_str = []
+        portal_enter_list_str = []
+        room_list_str = []
         for n in self.graph.neighbors(self.curr_pos):
             if n.type == graph.NodeType.Portal:
-                portal_list.append(n)
+                if self.curr_pos.type == graph.NodeType.Portal and \
+                        n.is_same_portal(self.curr_pos):
+                    portal_enter_list.append(n)
+                    portal_enter_list_str.append("Enter Portal {} to Portal {}".format(str(self.curr_pos), str(n)))
+                else:
+                    portal_navigation_list.append(n)
+                    portal_navigation_list_str.append("Navigate to Portal {}".format(str(n)))
             elif n.type == graph.NodeType.Victim:
                 victim_list.append(n)
+                victim_list_str.append("Triage Victim {} ({})".format(str(n), n.get_type_str()))
             elif n.type == graph.NodeType.Room:
-                the_room = n
+                room_list.append(n)
+                room_list_str.append("Enter Room Center {}".format(str(n)))
+        action_space = portal_navigation_list + portal_enter_list + victim_list + room_list
+        action_space_str = portal_navigation_list_str + portal_enter_list_str + victim_list_str + room_list_str
 
-
-
-    def get_victims_in_room(self):
-        pass
+        return action_space, action_space_str
 
     def get_device_info(self):
-        pass
+        if self.curr_pos.type == graph.NodeType.Portal:
+            connected_room = self.graph.id2node[self.curr_pos.linked_portal.get_connected_room_id()]
+            if self.graph.has_yellow_victim_in(connected_room):
+                return "Beep-Beep"
+            elif self.graph.has_green_victim_in(connected_room):
+                return "Beep"
+        return "Nothing"
 
     def console_play(self):
         while True:
             print("Your Current Position:", str(self.curr_pos))
+            print("Total Cost:", str(self.total_cost))
+            print("Total Reward:", str(self.reward))
+            print("Device Info:", self.get_device_info())
+            print()
 
-            action_str = ""
-            act = input("Choose Action:\n" + action_str)
+            action_space, action_space_str = self.get_action_space()
+            print("Possible Actions:")
+            print("\n".join(str(idx) + ": " + act_str for idx, act_str in enumerate(action_space_str)))
+            act = input("Choose an Action: ")
+            print()
+            chosen_action = action_space[int(act)]
+            self.step(chosen_action)
+
+if __name__ == '__main__':
+    data_folder = Path("data")
+
+    portals_csv = data_folder / "sparky_portals.csv"
+    rooms_csv = data_folder / "sparky_rooms.csv"
+    victims_csv = data_folder / "sparky_victims.csv"
+
+    portal_data = pd.read_csv(portals_csv)
+    room_data = pd.read_csv(rooms_csv)
+    victim_data = pd.read_csv(victims_csv)
+
+    env = AsistEnv(portal_data, room_data, victim_data)
+    env.console_play()
 

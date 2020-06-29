@@ -85,6 +85,15 @@ class VictimNode(Node):
             self.victim_type = VictimType.Safe
             return 15, 30
 
+    def get_type_str(self):
+        if self.victim_type == VictimType.Green:
+            return "Green"
+        if self.victim_type == VictimType.Yellow:
+            return "Yellow"
+        if self.victim_type == VictimType.Safe:
+            return "Safe"
+        if self.victim_type == VictimType.Dead:
+            return "Dead"
 
 class RoomNode(Node):
     def __init__(self, id, name, location, victims):

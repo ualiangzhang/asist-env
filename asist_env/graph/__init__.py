@@ -111,10 +111,10 @@ class Graph(nx.Graph):
 
     def add_room(self, id=None, name=None, location=None, victims=None):
         """ Add Room Node
-
         :param id: the room id, if id not give, the method will auto generate one
         :param name: name of the room, if any
         :param location: location of the center of the room, tuple of x,z coordinate
+        :param victims: None or a list of victim id string
         :return: the created room node
         """
         assert id is None or isinstance(id, str)
@@ -180,6 +180,9 @@ class Graph(nx.Graph):
 
         return room
 
+    def get_edge_cost(self, node1, node2):
+        return self.get_edge_data(node1, node2)["weight"]
+
     def close_all_portal(self):
         for portal_pair in self.portal_list:
             portal_pair[0].close_portal()
@@ -193,6 +196,14 @@ class Graph(nx.Graph):
             yellow_victim.yellow_death()
         self.dead_victim_list += self.yellow_victim_list
         self.yellow_victim_list = []
+
+    def has_yellow_victim_in(self, room):
+        assert isinstance(room, RoomNode)
+        return any(self.id2node[n].victim_type == VictimType.Yellow for n in room.victim_list)
+
+    def has_green_victim_in(self, room):
+        assert isinstance(room, RoomNode)
+        return any(self.id2node[n].victim_type == VictimType.Green for n in room.victim_list)
 
     def better_layout(self, with_spring=False, portal_sep=1.5):
         layout_dict = dict()
