@@ -23,7 +23,7 @@ def animate_graph(graph, pos, weight_labels):
     matplotlib.use("TkAgg")
     # Animation update function
     def update(num):
-        print(num)
+        pos, fix = graph.better_layout()
         ax.clear()
         color_map = graph.better_color()
         nx.draw(graph, pos, with_labels=True, node_color=color_map, ax=ax, node_size=100, edge_labels=weight_labels)
@@ -58,6 +58,6 @@ if __name__ == '__main__':
     pos = graph.clockwise90(pos)
     weight_labels = nx.get_edge_attributes(graph,'weight')
 
-    plot_graph(graph, pos, weight_labels, save="test")
-
+    plot_graph(graph, pos, weight_labels, save="expanded")
+    # animate_graph(graph, pos, weight_labels)
 

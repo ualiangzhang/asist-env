@@ -1,5 +1,5 @@
 import networkx as nx
-from .Nodes import *
+from graph.Nodes import *
 from collections.abc import Iterable
 import math
 import numpy as np
@@ -242,12 +242,20 @@ class Graph(nx.Graph):
         assert isinstance(room, RoomNode)
         return any(self.id2node[n].victim_type == VictimType.Green for n in room.victim_list)
 
-    def better_layout(self, with_spring=False, portal_sep=1.5):
+    def better_layout(self, with_spring=False, portal_sep=1.5, fix_portal=True, expand_iteration=20, expand_radius=2.5, shift_dist=0.1):
         """ Make the map layout adhere to the original coordinate layout
         :param with_spring: Experimental, whether to use the networkx spring layout
         :param portal_sep: the separation distance for portal pairs
+        :param expand_iteration: the number of iterations to perform the node expansion, set 0 if no expansion needed
+        :param expand_radius: the radius of judging how compact the node is
+        :param shift_dist: the distance to shift if nodes are too compact
         :return: the graph layout dictionary, and the nodes that are fixed if with_spring is True
         """
+        assert isinstance(with_spring, bool)
+        assert isinstance(portal_sep, int) or isinstance(portal_sep, float)
+        assert isinstance(expand_iteration, int) and expand_iteration >= 0
+        assert isinstance(expand_radius, int) or isinstance(expand_radius, float)
+        assert isinstance(shift_dist, int) or isinstance(shift_dist, float)
         layout_dict = dict()
         fix_node = list()
         for node in self.nodes_list:
@@ -263,6 +271,26 @@ class Graph(nx.Graph):
                 if fix:
                     fix_node.append(node)
 
+        # expand the collided and compacted nodes
+        for iter in range(expand_iteration):
+            for node in self.nodes_list:
+                if fix_portal and node.type == NodeType.Portal:
+                    continue
+                nodes_in_range = []
+                for nb in self.get_neighbors(node):
+                    if self.euclidean_distances(tuple(layout_dict[nb]), tuple(layout_dict[node])) < expand_radius:
+                        nodes_in_range.append(nb)
+                # find the centroid of all the neighbor nodes in range
+                x = [n.loc[0] for n in nodes_in_range]
+                z = [n.loc[1] for n in nodes_in_range]
+                if len(nodes_in_range) == 0:
+                    continue
+                else:
+                    centroid = (sum(x) / len(nodes_in_range), sum(z) / len(nodes_in_range))
+                new_pos = self.shift_distance(-shift_dist, tuple(layout_dict[node]), centroid)
+                layout_dict[node] = np.array(new_pos)
+
+
         # separate overlapping portal
         for portal_pair in self.portal_list:
             portal_1, portal_2 = portal_pair
@@ -276,6 +304,7 @@ class Graph(nx.Graph):
             else:
                 pos_2 = self.shift_distance(portal_sep, portal_2.loc, room_2.loc)
                 layout_dict[portal_2] = np.array(pos_2)
+
 
         return layout_dict, fix_node
 
