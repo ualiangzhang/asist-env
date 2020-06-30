@@ -374,3 +374,26 @@ class Graph(nx.Graph):
         new_z = pos1[1] + ratio * (pos2[1] - pos1[1])
         return new_x, new_z
 
+class RandomGraph(Graph):
+    def __init__(self, room_number, green_range, yellow_range, portal_open="random"):
+        """ Initialization and creation of a RandomGraph
+        :param room_number:
+        :param green_range:
+        :param yellow_range:
+        :param portal_open:
+        """
+        assert portal_open in ["random", "open", "close"]
+        super(RandomGraph, self).__init__()
+        self.room_number = room_number
+        self.green_range = green_range
+        self.yellow_range = yellow_range
+        self.portal_open = portal_open
+
+    def generate_random_rooms(self):
+        pass
+
+    def link_portals_in_between(self):
+        pass
+
+    def add_victims_to_room(self):
+        pass
