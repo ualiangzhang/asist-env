@@ -111,6 +111,8 @@ time,state
 237,p18-ae2
 237,p18-achl
 238,achl
+242,p27-achl
+242,p27-awb0
 243,awb0
 245,p20-awb0
 245,p20-awb2
@@ -120,7 +122,11 @@ time,state
 259,p20-awb2
 259,p20-awb0
 260,awb0
+267,p27-awb0
+267,p27-achl
 268,achl
+270,p26-achl
+270,p26-amb0
 271,amb0
 273,v3
 281,amb0
@@ -129,6 +135,8 @@ time,state
 292,p21-amb1
 292,p21-amb0
 293,amb0
+298,p26-amb0
+298,p26-achl
 299,achl
 300,p28-achl
 300,p28-alha

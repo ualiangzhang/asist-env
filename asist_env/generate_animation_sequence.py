@@ -1,15 +1,38 @@
 import pandas as pd
 from pathlib import Path
+from environment import MapParser
+import graph
+from datetime import datetime
+
+
+def time_str_to_timestamp(str):
+    datetime_object = datetime.strptime(str, "%Y-%m-%dT%H:%M:%S.%fZ")
+    return int(datetime_object.timestamp())
+
+data_folder = Path("data")
+
+portals_csv = data_folder / "sparky_portals.csv"
+rooms_csv = data_folder / "sparky_rooms.csv"
+victims_csv = data_folder / "sparky_victims.csv"
+
+portal_data = pd.read_csv(portals_csv)
+room_data = pd.read_csv(rooms_csv)
+victim_data = pd.read_csv(victims_csv)
+
+g = MapParser.parse_map_data(portal_data, room_data, victim_data)
+
 
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 data_folder = Path("data")
-processed_csv = data_folder / "processed_2.csv"
+processed_csv = data_folder / "processed_04.csv"
 
 raw_sequence = pd.read_csv(processed_csv)
-state_sequence = pd.DataFrame(columns=['timestamp', 'state'])
+state_sequence = pd.DataFrame(columns=['time', 'state'])
 
 last_state = None
+
+start_time = time_str_to_timestamp(raw_sequence["@timestamp"][0])
 for index, row in raw_sequence.iterrows():
     if row["Room_in"] != "None":
         if row["triage_result"] == "SUCCESSFUL":
@@ -21,12 +44,37 @@ for index, row in raw_sequence.iterrows():
     else:
         continue
 
+    curr_time = time_str_to_timestamp(row["@timestamp"])
+
     if curr_state != last_state:
+        if last_state is not None and g[curr_state].type == graph.NodeType.Room and \
+                g[last_state].type == graph.NodeType.Room:
+            for n in g.get_neighbors(g[curr_state]):
+                if n.type == graph.NodeType.Portal:
+                    linked = n.linked_portal
+                    if g[last_state].id == linked.get_connected_room_id():
+                        state_sequence = state_sequence.append({
+                            'time': curr_time - start_time - 1,
+                            'state': linked.id
+                        }, ignore_index=True)
+                        # print(linked.id, curr_state, last_state)
+                        # input()
+                        state_sequence = state_sequence.append({
+                            'time': curr_time - start_time - 1,
+                            'state': n.id
+                        }, ignore_index=True)
+                        # print(n.id, curr_state, last_state)
+                        # input()
+
         last_state = curr_state
 
+
         state_sequence = state_sequence.append({
-            'timestamp': row["@timestamp"],
+            'time': curr_time - start_time,
             'state': curr_state
         }, ignore_index=True)
+        # print(curr_state, curr_state, last_state)
+        # input()
 
 print(state_sequence)
+state_sequence.to_csv(data_folder / "animation_sequence_processed_04.csv", index=False)
