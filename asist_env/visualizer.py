@@ -70,7 +70,7 @@ if __name__ == '__main__':
     weight_labels = nx.get_edge_attributes(graph,'weight')
 
     plot_graph(graph, pos, weight_labels, save="JC")
-    # animate_graph(graph, pos, weight_labels)
+    # # animate_graph(graph, pos, weight_labels)
 
     # plot_random_graph()
 

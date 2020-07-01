@@ -49,7 +49,7 @@ class AsistEnvRandGen:
 class AsistEnv:
     def __init__(self, portal_data, room_data, victim_data):
         self.graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
-        self.curr_pos = self.graph["Start"]
+        self.curr_pos = self.graph["as"]
         self.prev_pos = None
         self.total_cost = 0
         self.reward = 0
