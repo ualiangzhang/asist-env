@@ -27,8 +27,9 @@ class MapParser:
             g.add_victim(cls.victim_type_str_to_type(row["type"]), id=row["id"], location=eval(row["loc"]))
 
         for index, row in portal_data.iterrows():
-            is_open = row['isOpen'] == "TRUE"
-            g.add_portal(tuple(eval(row["connections"])), is_open, id=row["id"], location=eval(row["loc"]))
+            # is_open = row['isOpen'] == "TRUE"
+            # g.add_portal(tuple(eval(row["connections"])), is_open, id=row["id"], location=eval(row["loc"]))
+            g.add_portal(tuple(eval(row["connections"])), id=row["id"], location=eval(row["loc"]))
 
         for room in g.room_list:
             g.link_victims_in_room(room, room.victim_list)

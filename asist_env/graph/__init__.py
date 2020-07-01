@@ -79,7 +79,7 @@ class Graph(nx.Graph):
 
         return node
 
-    def add_portal(self, connected_room_ids, is_open, id=None, name=None, location=None):
+    def add_portal(self, connected_room_ids, is_open=False, id=None, name=None, location=None):
         """ Add portal (pair)
 
         :param id: the portal id, if id not give, the method will auto generate one
