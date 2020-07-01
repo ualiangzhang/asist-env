@@ -4,7 +4,7 @@ from pathlib import Path
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 data_folder = Path("data")
-processed_csv = data_folder / "processed_02.csv"
+processed_csv = data_folder / "processed_2.csv"
 
 raw_sequence = pd.read_csv(processed_csv)
 state_sequence = pd.DataFrame(columns=['timestamp', 'state'])

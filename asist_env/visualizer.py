@@ -52,9 +52,9 @@ if __name__ == '__main__':
     # Get data
     data_folder = Path("data")
 
-    portals_csv = data_folder / "sparky_portals_Jincheng_definition.csv"
-    rooms_csv = data_folder / "sparky_rooms_Jincheng_definition.csv"
-    victims_csv = data_folder / "sparky_victims_Jincheng_definition.csv"
+    portals_csv = data_folder / "sparky_portals.csv"
+    rooms_csv = data_folder / "sparky_rooms.csv"
+    victims_csv = data_folder / "sparky_victims.csv"
 
     portal_data = pd.read_csv(portals_csv)
     room_data = pd.read_csv(rooms_csv)
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     pos = graph.clockwise90(pos)
     weight_labels = nx.get_edge_attributes(graph,'weight')
 
-    plot_graph(graph, pos, weight_labels, save="JC")
+    plot_graph(graph, pos, weight_labels, save="graph")
     # # animate_graph(graph, pos, weight_labels)
 
     # plot_random_graph()
