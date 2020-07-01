@@ -3,6 +3,7 @@ from graph.Nodes import *
 from collections.abc import Iterable
 import math
 import numpy as np
+import random
 
 
 class Graph(nx.Graph):
@@ -113,7 +114,7 @@ class Graph(nx.Graph):
         return node_1, node_2
 
 
-    def add_room(self, id=None, name=None, location=None, victims=None):
+    def add_room(self, id=None, name=None, location=None, victims=[]):
         """ Add Room Node
         :param id: the room id, if id not give, the method will auto generate one
         :param name: name of the room, if any
@@ -137,61 +138,83 @@ class Graph(nx.Graph):
 
         return node
 
-    def link_victims_in_room(self, room, list_of_victim_id):
+    def link_victims_in_room(self, room, list_of_victim_id, random_cost=None):
         """ The First Linkage Function to run
         Make a fully connected sub-graph of room nodes and victims node inside that room
 
         :param room: the room Node
         :param list_of_victim_id: the list of victim ids inside the room
+        :param random_cost: None if cost based on loc, (min, max) if random
         :return: the room node
         """
         assert isinstance(room, RoomNode)
         assert isinstance(list_of_victim_id, list) and all(isinstance(v, str) for v in list_of_victim_id)
+        assert random_cost is None or isinstance(random_cost, tuple) and len(random_cost) == 2 and \
+               all(isinstance(n, int) for n in random_cost) and random_cost[0] >= 1
 
         for v_id in list_of_victim_id:
             victim = self.id2node[v_id]
-            self.add_edge(room, victim, weight=self.euclidean_distances(room.loc, victim.loc))
+            if random_cost is None:
+                self.add_edge(room, victim, weight=self.euclidean_distances(room.loc, victim.loc))
+            else:
+                self.add_edge(room, victim, weight=random.randint(random_cost[0], random_cost[1]))
 
         for i in range(len(list_of_victim_id)):
             for j in range(i+1, len(list_of_victim_id)):
                 victim_1 = self.id2node[list_of_victim_id[i]]
                 victim_2 = self.id2node[list_of_victim_id[j]]
-                self.add_edge(victim_1, victim_2, weight=self.euclidean_distances(victim_1.loc, victim_2.loc))
-
+                if random_cost is None:
+                    self.add_edge(victim_1, victim_2, weight=self.euclidean_distances(victim_1.loc, victim_2.loc))
+                else:
+                    self.add_edge(victim_1, victim_2, weight=random.randint(random_cost[0], random_cost[1]))
         return room
 
-    def connect_portal_to_rooms(self, portal_tuple):
+    def connect_portal_to_rooms(self, portal_tuple, random_cost=None):
         """ The second Linkage Function to run
         Connect the portal to the two rooms it is adjacent to
         :param portal_tuple: the two portals indicate two sides of the door
         """
         assert isinstance(portal_tuple, tuple) and len(portal_tuple) == 2 and \
                all(isinstance(p, PortalNode) for p in portal_tuple)
+        assert random_cost is None or isinstance(random_cost, tuple) and len(random_cost) == 2 and \
+               all(isinstance(n, int) for n in random_cost) and random_cost[0] >= 1
 
         portal_1, portal_2 = portal_tuple
 
         # connecting portal with the two adjacent rooms
         room_1 = self.id2node[portal_1.get_connected_room_id()]
         room_2 = self.id2node[portal_2.get_connected_room_id()]
-        self.add_edge(portal_1, room_1, weight=self.euclidean_distances(room_1.loc, portal_1.loc))
-        self.add_edge(portal_2, room_2, weight=self.euclidean_distances(room_2.loc, portal_2.loc))
+        if random_cost is None:
+            self.add_edge(portal_1, room_1, weight=self.euclidean_distances(room_1.loc, portal_1.loc))
+            self.add_edge(portal_2, room_2, weight=self.euclidean_distances(room_2.loc, portal_2.loc))
+        else:
+            self.add_edge(portal_1, room_1, weight=random.randint(random_cost[0], random_cost[1]))
+            self.add_edge(portal_2, room_2, weight=random.randint(random_cost[0], random_cost[1]))
 
         # connecting portal with all the victims in side the adjacent room
         for v_id in room_1.victim_list:
             victim = self.id2node[v_id]
-            self.add_edge(portal_1, victim, weight=self.euclidean_distances(room_1.loc, victim.loc))
+            if random_cost is None:
+                self.add_edge(portal_1, victim, weight=self.euclidean_distances(room_1.loc, victim.loc))
+            else:
+                self.add_edge(portal_1, victim, weight=random.randint(random_cost[0], random_cost[1]))
 
         for v_id in room_2.victim_list:
             victim = self.id2node[v_id]
-            self.add_edge(portal_2, victim, weight=self.euclidean_distances(room_2.loc, victim.loc))
+            if random_cost is None:
+                self.add_edge(portal_2, victim, weight=self.euclidean_distances(room_2.loc, victim.loc))
+            else:
+                self.add_edge(portal_2, victim, weight=random.randint(random_cost[0], random_cost[1]))
 
-    def connected_portals_to_portals(self, portal_tuple):
+    def connected_portals_to_portals(self, portal_tuple, random_cost=None):
         """ The third Linkage Function to run
         Connect the portal to portals that is connected with the room it is adjacent to
         :param portal_tuple: the two portals indicate two sides of the door
         """
         assert isinstance(portal_tuple, tuple) and len(portal_tuple) == 2 and \
                all(isinstance(p, PortalNode) for p in portal_tuple)
+        assert random_cost is None or isinstance(random_cost, tuple) and len(random_cost) == 2 and \
+               all(isinstance(n, int) for n in random_cost) and random_cost[0] >= 1
 
         portal_1, portal_2 = portal_tuple
 
@@ -201,11 +224,17 @@ class Graph(nx.Graph):
 
         for n in self.get_neighbors(room_1):
             if n.type == NodeType.Portal and n != portal_1 and not self.has_edge(n, portal_1):
-                self.add_edge(portal_1, n, weight=self.euclidean_distances(portal_1.loc, n.loc))
+                if random_cost is None:
+                    self.add_edge(portal_1, n, weight=self.euclidean_distances(portal_1.loc, n.loc))
+                else:
+                    self.add_edge(portal_1, n, weight=random.randint(random_cost[0], random_cost[1]))
 
         for n in self.get_neighbors(room_2):
             if n.type == NodeType.Portal and n != portal_2 and not self.has_edge(n, portal_2):
-                self.add_edge(portal_2, n, weight=self.euclidean_distances(portal_2.loc, n.loc))
+                if random_cost is None:
+                    self.add_edge(portal_2, n, weight=self.euclidean_distances(portal_2.loc, n.loc))
+                else:
+                    self.add_edge(portal_2, n, weight=random.randint(random_cost[0], random_cost[1]))
 
     def get_neighbors(self, node):
         # get neighbor nodes of a node
@@ -374,3 +403,62 @@ class Graph(nx.Graph):
         new_z = pos1[1] + ratio * (pos2[1] - pos1[1])
         return new_x, new_z
 
+class RandomGraphGenerator():
+    @classmethod
+    def generate_random_graph(cls, num_of_rooms, edge_weight_range, green_range, yellow_range,
+                              portal_state="random", open_ratio=0.5, light_state="random"):
+        assert isinstance(edge_weight_range, tuple) and len(edge_weight_range) == 2 and \
+               all(isinstance(n, int) for n in edge_weight_range) and edge_weight_range[0] >= 1
+        assert isinstance(green_range, tuple) and len(green_range) == 2 and \
+               all(isinstance(n, int) for n in green_range) and green_range[0] >= 0
+        assert isinstance(yellow_range, tuple) and len(yellow_range) == 2 and \
+               all(isinstance(n, int) for n in yellow_range) and yellow_range[0] >= 0
+        assert portal_state in ["random", "open", "close"]
+        assert light_state in ["random", "open", "close"]
+        assert open_ratio is None or isinstance(open_ratio, float) and 0 < open_ratio < 1
+        G = Graph()
+        guide = nx.connected_watts_strogatz_graph(num_of_rooms, 3, 0.5)
+        guide_dict = dict()
+
+        # add rooms according to guide, add victims in, fully connect them
+        for node in guide.nodes:
+            temp_victim_list = []
+            for g_v in range(random.randint(green_range[0], green_range[1])):
+                victim = G.add_victim(VictimType.Green)
+                temp_victim_list.append(victim.id)
+            for g_v in range(random.randint(yellow_range[0], yellow_range[1])):
+                victim = G.add_victim(VictimType.Yellow)
+                temp_victim_list.append(victim.id)
+            room = G.add_room(victims=temp_victim_list)
+            guide_dict[node] = room
+            G.link_victims_in_room(room, temp_victim_list, edge_weight_range)
+
+        # add portals in between edges
+        for edge in guide.edges:
+            room_1 = guide_dict[edge[0]]
+            room_2 = guide_dict[edge[1]]
+            if portal_state == "open":
+                portal_tuple = G.add_portal((room_1.id, room_2.id), is_open=True)
+                G.connect_portal_to_rooms(portal_tuple, edge_weight_range)
+            elif portal_state == "close":
+                portal_tuple = G.add_portal((room_1.id, room_2.id), is_open=False)
+                G.connect_portal_to_rooms(portal_tuple, edge_weight_range)
+            else:
+                if random.random() < open_ratio:
+                    portal_tuple = G.add_portal((room_1.id, room_2.id), is_open=True)
+                    G.connect_portal_to_rooms(portal_tuple, edge_weight_range)
+                else:
+                    portal_tuple = G.add_portal((room_1.id, room_2.id), is_open=False)
+                    G.connect_portal_to_rooms(portal_tuple, edge_weight_range)
+
+        # Connect portal with portals
+        for portal_tuple in G.portal_list:
+            G.connected_portals_to_portals(portal_tuple, edge_weight_range)
+
+        # add the Start Node
+        G.add_room(id="Start")
+        start_portal_tuple = G.add_portal(("Start", "R0"), True)
+        G.connect_portal_to_rooms(start_portal_tuple, edge_weight_range)
+        G.connected_portals_to_portals(start_portal_tuple, edge_weight_range)
+
+        return G

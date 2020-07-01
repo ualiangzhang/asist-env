@@ -1,6 +1,5 @@
 from enum import Enum
 
-
 class NodeType(Enum):
     Portal = 0
     Victim = 1
