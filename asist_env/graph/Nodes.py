@@ -79,7 +79,7 @@ class VictimNode(Node):
         # TODO: Need to discuss cost and reward here
         elif self.victim_type == VictimType.Green:
             self.victim_type = VictimType.Safe
-            return 10, 10
+            return 7, 10
         else: # A Yellow Victim
             self.victim_type = VictimType.Safe
             return 15, 30

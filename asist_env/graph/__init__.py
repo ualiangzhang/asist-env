@@ -337,12 +337,15 @@ class Graph(nx.Graph):
 
         return layout_dict, fix_node
 
-    def better_color(self):
+    def better_color(self, curr_node=None):
         """ Color the nodes based on their types
         :return: the color map used for plotting
         """
         color_map = []
         for node in self:
+            if node.id == curr_node:
+                color_map.append('red')
+                continue
             if node.type == NodeType.Victim:
                 if node.victim_type == VictimType.Green:
                     color_map.append('limegreen')

@@ -5,10 +5,18 @@ import pandas as pd
 from pathlib import Path
 import networkx as nx
 from graph import RandomGraphGenerator
+from graph.Nodes import NodeType
 
 # pos = nx.spring_layout(graph, k=0.9, iterations=3, pos=pos, fixed=fix, weight=3)
 
-def plot_graph(graph, pos, weight_labels, save=None):
+def plot_graph(save=None):
+    graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
+    # Get position
+    pos, fix = graph.better_layout()
+    pos = graph.flip_z(pos)
+    pos = graph.clockwise90(pos)
+    weight_labels = nx.get_edge_attributes(graph,'weight')
+
     plt.figure(figsize=(15,15))
     color_map = graph.better_color()
     nx.draw(graph, pos, with_labels=True, node_color=color_map, edge_labels=weight_labels)
@@ -30,26 +38,41 @@ def plot_random_graph():
     plt.show()
 
 
-def animate_graph(graph, pos, weight_labels):
-    matplotlib.use("TkAgg")
-    # Animation update function
-    def update(num):
-        pos, fix = graph.better_layout()
-        ax.clear()
-        color_map = graph.better_color()
-        nx.draw(graph, pos, with_labels=True, node_color=color_map, ax=ax, node_size=100, edge_labels=weight_labels)
-        nx.draw_networkx_edge_labels(graph, pos, edge_labels=weight_labels, ax=ax)
+def animate_graph():
+    animation_sequence = pd.read_csv(r"data\animation_sequence_processed_04.csv").values.tolist()
+    # animation_sequence = animation_sequence[:30]
+    # print(animation_sequence)
+    graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
+    # Get position
+    pos, fix = graph.better_layout()
+    pos = graph.flip_z(pos)
+    pos = graph.clockwise90(pos)
+    weight_labels = nx.get_edge_attributes(graph,'weight')
 
-        ax.set_xticks([])
-        ax.set_yticks([])
+    # Animation update function
+    def update(animation_sequence):
+        ax.clear()
+        curr_node = animation_sequence[1]
+        if graph[curr_node].type == NodeType.Victim:
+            cost, reward = graph[curr_node].triage()
+
+        color_map = graph.better_color(curr_node)
+        nx.draw(graph, pos, with_labels=True, node_color=color_map, node_size=50, edge_labels=weight_labels,
+                font_size=7, width=0.5)
+        nx.draw_networkx_edge_labels(graph, pos, edge_labels=weight_labels, font_size=7)
+        ax.set_title("Time: " + str(animation_sequence[0]) + "  Score: " + str(animation_sequence[2]))
 
     fig, ax = plt.subplots(figsize=(10,10))
-    ani = matplotlib.animation.FuncAnimation(fig, update, frames=6, interval=1000)
-    plt.show()
+    fig.subplots_adjust(left=0, bottom=0, right=1, top=0.9, wspace=None, hspace=None)
+    ani = matplotlib.animation.FuncAnimation(fig, update, frames=animation_sequence, interval=300)
+    # plt.show()
+    ani.save('animation_3.mp4')
 
 
 if __name__ == '__main__':
-    # Get data
+    # =================================
+    # Data Load Start
+    # =================================
     data_folder = Path("data")
 
     portals_csv = data_folder / "sparky_portals.csv"
@@ -59,18 +82,12 @@ if __name__ == '__main__':
     portal_data = pd.read_csv(portals_csv)
     room_data = pd.read_csv(rooms_csv)
     victim_data = pd.read_csv(victims_csv)
+    # =================================
+    # Data Load End
+    # =================================
 
-    graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
-
-
-    # Get position
-    pos, fix = graph.better_layout()
-    pos = graph.flip_z(pos)
-    pos = graph.clockwise90(pos)
-    weight_labels = nx.get_edge_attributes(graph,'weight')
-
-    plot_graph(graph, pos, weight_labels, save="graph")
-    # # animate_graph(graph, pos, weight_labels)
+    # plot_graph(save="graph")
+    animate_graph()
 
     # plot_random_graph()
 

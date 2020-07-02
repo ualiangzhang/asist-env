@@ -28,15 +28,17 @@ data_folder = Path("data")
 processed_csv = data_folder / "processed_04.csv"
 
 raw_sequence = pd.read_csv(processed_csv)
-state_sequence = pd.DataFrame(columns=['time', 'state'])
+state_sequence = pd.DataFrame(columns=['time', 'state', 'score'])
 
 last_state = None
 
 start_time = time_str_to_timestamp(raw_sequence["@timestamp"][0])
+cumulative_score = 0
 for index, row in raw_sequence.iterrows():
     if row["Room_in"] != "None":
         if row["triage_result"] == "SUCCESSFUL":
             curr_state = "v" + row["event_triage_victim_id"]
+
         else:
             curr_state = row["Room_in"]
     # elif row["Portal_in"] != "None":
@@ -55,23 +57,32 @@ for index, row in raw_sequence.iterrows():
                     if g[last_state].id == linked.get_connected_room_id():
                         state_sequence = state_sequence.append({
                             'time': curr_time - start_time - 1,
-                            'state': linked.id
+                            'state': linked.id,
+                            'score': cumulative_score
                         }, ignore_index=True)
                         # print(linked.id, curr_state, last_state)
                         # input()
                         state_sequence = state_sequence.append({
                             'time': curr_time - start_time - 1,
-                            'state': n.id
+                            'state': n.id,
+                            'score': cumulative_score
                         }, ignore_index=True)
                         # print(n.id, curr_state, last_state)
                         # input()
+
+        if g[curr_state].type == graph.NodeType.Victim:
+            if g[curr_state].victim_type == graph.VictimType.Green:
+                cumulative_score += 10
+            if g[curr_state].victim_type == graph.VictimType.Yellow:
+                cumulative_score += 30
 
         last_state = curr_state
 
 
         state_sequence = state_sequence.append({
             'time': curr_time - start_time,
-            'state': curr_state
+            'state': curr_state,
+            'score': cumulative_score
         }, ignore_index=True)
         # print(curr_state, curr_state, last_state)
         # input()
