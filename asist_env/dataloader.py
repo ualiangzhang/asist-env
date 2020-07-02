@@ -12,9 +12,9 @@ def get_midpoint(x0, z0, x1, z1):
     return ((x0+x1)/2, (z0+z1)/2)
 
 # TODO: make command line interface, split up into functions.
-sparky_rooms   = pd.read_csv('./data/ASIST_SparkyMap_RoomLocations_v5.5.csv')
-sparky_portals = pd.read_csv('./data/ASIST_SparkyMap_DoorLocations_v5.5.csv')
-sparky_victims = pd.read_csv('./data/ASIST_SparkyMap_VictimLocations_v5.5.csv')
+sparky_rooms   = pd.read_csv('./data/ASIST_SparkyMap_Rooms_v5.5.csv')
+sparky_portals = pd.read_csv('./data/ASIST_SparkyMap_Portals_v5.5.csv')
+sparky_victims = pd.read_csv('./data/ASIST_SparkyMap_Victims_v5.5.csv')
 sparky_portals['Index'] = sparky_portals['Index'].apply(lambda x: "p" + str(x))
 sparky_victims['Index'] = sparky_victims['Index'].apply(lambda y: "v" + str(y))
 
