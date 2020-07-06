@@ -1,5 +1,6 @@
 import graph
 import pandas as pd
+import numpy as np
 from pathlib import Path
 
 class MapParser:
@@ -25,7 +26,6 @@ class MapParser:
 
         for index, row in victim_data.iterrows():
             g.add_victim(cls.victim_type_str_to_type(row["type"]), id=row["id"], location=eval(row["loc"]))
-
         for index, row in portal_data.iterrows():
             # is_open = row['isOpen'] == "TRUE"
             # g.add_portal(tuple(eval(row["connections"])), is_open, id=row["id"], location=eval(row["loc"]))
@@ -47,30 +47,111 @@ class AsistEnvRandGen:
         pass
 
 class AsistEnv:
-    def __init__(self, portal_data, room_data, victim_data):
+    def __init__(self, portal_data, room_data, victim_data, start_node_id):
         self.graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
-        self.curr_pos = self.graph["as"]
+        # self.graph_copy = self.graph.copy()
+        self.start_node_id = start_node_id
+        self.curr_pos = self.graph[start_node_id]
         self.prev_pos = None
         self.total_cost = 0
-        self.reward = 0
+        self.score = 0
+        self.positive_reward_multiplier = 10
+        self.victim_data = victim_data
         # TODO: Add Memory (Graph)
 
     def reset(self):
-        pass
+        self.curr_pos = self.graph[self.start_node_id]
+        self.graph.reset()
+        # self.graph = self.graph_copy.copy()
+        self.total_cost = 0
+        self.score = 0
+        self.prev_pos = None
+        return self.get_observation()
+
+    def get_victim_list_size(self):
+        return len(self.graph.victim_list)
 
     def step(self, action):
+        """ The global view
+        :param performance: 0: navigate, 1: enter, 2: triage
+        :param action_node: the index of the node for your performance
+        :return: (observation, reward)
+        """
+        # assert performance in [0, 1, 2]
+
+        performance, action_node_idx = action
+
+        reward = 0
+        action_node = self.graph.victim_list[action_node_idx]
+
+        triage_set = set()
+        navigation_set = set()
+        portal_enter_set = set()
+        for n in self.graph.neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Portal:
+                if self.curr_pos.type == graph.NodeType.Portal and \
+                        n.is_same_portal(self.curr_pos):
+                    portal_enter_set.add(n)
+                else:
+                    navigation_set.add(n)
+            elif n.type == graph.NodeType.Victim:
+                triage_set.add(n)
+            elif n.type == graph.NodeType.Room:
+                navigation_set.add(n)
+
+        valid_action = True
+        if performance == 0 and action_node not in navigation_set:
+            valid_action = False
+        if performance == 1 and action_node not in portal_enter_set:
+            valid_action = False
+        if performance == 2 and action_node not in triage_set:
+            valid_action = False
+
+        if not valid_action:
+            reward -= 100
+        else:
+            print(action)
+            self.prev_pos = self.curr_pos
+            self.curr_pos = action_node
+            edge_cost = self.graph.get_edge_cost(self.curr_pos, action_node)
+            reward -= edge_cost
+            self.total_cost += edge_cost
+            if action_node.type == graph.NodeType.Victim:
+                triage_cost, triage_score = action_node.triage()
+                reward -= triage_cost
+                self.total_cost += triage_cost
+                self.score += triage_score
+                reward += triage_score * self.positive_reward_multiplier
+
+        done = False
+        if self.graph.no_more_victims() or self.total_cost > 1000:
+            done = True
+
+        return self.get_observation(), reward, done
+
+    def step_for_console_play(self, action):
         action_cost = self.graph.get_edge_cost(self.curr_pos, action)
-        action_reward = 0
+        action_score = 0
         if action.type == graph.NodeType.Victim:
-            triage_cost, triage_reward = action.triage()
+            triage_cost, triage_score = action.triage()
             action_cost += triage_cost
-            action_reward += triage_reward
+            action_score += triage_score
         self.total_cost += action_cost
-        self.reward += action_reward
+        self.score += action_score
         self.prev_pos = self.curr_pos
         self.curr_pos = action
 
-    def get_action_space(self):
+    def get_observation(self):
+        """ Observation is an array of the following:
+        [cur_pos, device_info, victim_1_state, victim_2_state, victim_3_state, ...]
+        :return: the above array
+        """
+        cur_pos = self.graph.nodes_list.index(self.curr_pos)
+        device_info = self.get_device_info()
+        victim_states = [n.victim_type.value for n in self.graph.victim_list]
+        return tuple(np.array([cur_pos] + [device_info] + victim_states))
+
+    def get_action_space_for_console_play(self):
         victim_list = []
         portal_navigation_list = []
         portal_enter_list = []
@@ -113,6 +194,16 @@ class AsistEnv:
         return action_space, action_space_str
 
     def get_device_info(self):
+        # Nothing: 0, Yellow: 1, Green: 2
+        if self.curr_pos.type == graph.NodeType.Portal:
+            connected_room = self.graph.id2node[self.curr_pos.linked_portal.get_connected_room_id()]
+            if self.graph.has_yellow_victim_in(connected_room):
+                return 1
+            elif self.graph.has_green_victim_in(connected_room):
+                return 2
+        return 0
+
+    def get_device_info_for_console_play(self):
         if self.curr_pos.type == graph.NodeType.Portal:
             connected_room = self.graph.id2node[self.curr_pos.linked_portal.get_connected_room_id()]
             if self.graph.has_yellow_victim_in(connected_room):
@@ -127,11 +218,11 @@ class AsistEnv:
             print("Your Current Position:", str(self.curr_pos))
             print("Your Previous Position:", str(self.prev_pos))
             print("Total Cost:", str(self.total_cost))
-            print("Total Reward:", str(self.reward))
-            print("Device Info:", self.get_device_info())
+            print("Total Reward:", str(self.score))
+            print("Device Info:", self.get_device_info_for_console_play())
             print()
 
-            action_space, action_space_str = self.get_action_space()
+            action_space, action_space_str = self.get_action_space_for_console_play()
             print("Possible Actions:")
             print("\n".join(str(idx) + ": " + act_str for idx, act_str in enumerate(action_space_str)))
             act = input("Choose an Action: ")
@@ -139,7 +230,7 @@ class AsistEnv:
                 break
             print()
             chosen_action = action_space[int(act)]
-            self.step(chosen_action)
+            self.step_for_console_play(chosen_action)
 
 if __name__ == '__main__':
     data_folder = Path("data")
@@ -152,6 +243,6 @@ if __name__ == '__main__':
     room_data = pd.read_csv(rooms_csv)
     victim_data = pd.read_csv(victims_csv)
 
-    env = AsistEnv(portal_data, room_data, victim_data)
-    env.console_play()
-
+    env = AsistEnv(portal_data, room_data, victim_data, "as")
+    # env.console_play()
+    print(env.get_observation())
