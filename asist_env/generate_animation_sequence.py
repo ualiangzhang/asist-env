@@ -25,7 +25,7 @@ g = MapParser.parse_map_data(portal_data, room_data, victim_data)
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 data_folder = Path("data")
-processed_csv = data_folder / "processed_04.csv"
+processed_csv = data_folder / "processed_07.csv"
 
 raw_sequence = pd.read_csv(processed_csv)
 state_sequence = pd.DataFrame(columns=['time', 'state', 'score'])
@@ -88,4 +88,4 @@ for index, row in raw_sequence.iterrows():
         # input()
 
 print(state_sequence)
-state_sequence.to_csv(data_folder / "animation_sequence_processed_04.csv", index=False)
+state_sequence.to_csv(data_folder / "animation_sequence_processed_07.csv", index=False)

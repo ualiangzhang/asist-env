@@ -40,6 +40,18 @@ class Graph(nx.Graph):
         """
         return self.id2node[id_key]
 
+    def reset(self):
+        for vn in self.victim_list:
+            vn.victim_type = vn.victim_type_original
+
+        self.green_victim_list.clear()
+        self.yellow_victim_list.clear()
+        self.safe_victim_list.clear()
+        self.dead_victim_list.clear()
+
+        for victim in self.victim_list:
+            self.victimType2list[victim.victim_type].append(victim)
+
     def add_victim(self, victim_type, id=None, name=None, location=None):
         """ Register a victim node to graph and append the corresponding lists
 
@@ -254,6 +266,27 @@ class Graph(nx.Graph):
         for portal_pair in self.portal_list:
             portal_pair[0].open_portal()
 
+    def triage(self, victim):
+        assert isinstance(victim, VictimNode)
+        if victim.victim_type == VictimType.Safe or victim.victim_type == VictimType.Dead:
+            return 0, 0
+        # TODO: Need to discuss cost and reward here
+        elif victim.victim_type == VictimType.Green:
+            self.green_victim_list.remove(victim)
+            victim.victim_type = VictimType.Safe
+            self.safe_victim_list.append(victim)
+            return 7, 10
+        else: # A Yellow Victim
+            self.yellow_victim_list.remove(victim)
+            victim.victim_type = VictimType.Safe
+            self.safe_victim_list.append(victim)
+            return 15, 30
+
+    def no_more_victims(self):
+        if len(self.yellow_victim_list) == 0 and len(self.green_victim_list) == 0:
+            return True
+        return False
+
     def kill_all_yellow_victims(self):
         # kill all yellow victims by turning them VictimType.Dead
         for yellow_victim in self.yellow_victim_list:
@@ -356,9 +389,9 @@ class Graph(nx.Graph):
                 if node.victim_type == VictimType.Safe:
                     color_map.append('silver')
             if node.type == NodeType.Portal:
-                color_map.append('goldenrod')
-            if node.type == NodeType.Room:
                 color_map.append('lightskyblue')
+            if node.type == NodeType.Room:
+                color_map.append('violet')
         return color_map
 
     def flip_z(self, pos):

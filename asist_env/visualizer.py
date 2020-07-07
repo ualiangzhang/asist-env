@@ -16,7 +16,6 @@ def plot_graph(save=None):
     pos = graph.flip_z(pos)
     pos = graph.clockwise90(pos)
     weight_labels = nx.get_edge_attributes(graph,'weight')
-
     plt.figure(figsize=(15,15))
     color_map = graph.better_color()
     nx.draw(graph, pos, with_labels=True, node_color=color_map, edge_labels=weight_labels)
@@ -54,8 +53,10 @@ def animate_graph():
         ax.clear()
         curr_node = animation_sequence[1]
         if graph[curr_node].type == NodeType.Victim:
-            cost, reward = graph[curr_node].triage()
-
+            cost, reward = graph.triage(graph[curr_node])
+        if animation_sequence[0] > 300:
+            graph.kill_all_yellow_victims()
+        print(animation_sequence[0])
         color_map = graph.better_color(curr_node)
         nx.draw(graph, pos, with_labels=True, node_color=color_map, node_size=50, edge_labels=weight_labels,
                 font_size=7, width=0.5)
@@ -66,7 +67,7 @@ def animate_graph():
     fig.subplots_adjust(left=0, bottom=0, right=1, top=0.9, wspace=None, hspace=None)
     ani = matplotlib.animation.FuncAnimation(fig, update, frames=animation_sequence, interval=300)
     # plt.show()
-    ani.save('animation_3.mp4')
+    ani.save('animation_processed_04.mp4')
 
 
 if __name__ == '__main__':
