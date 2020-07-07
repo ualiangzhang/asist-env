@@ -82,7 +82,7 @@ class AsistEnv:
         performance, action_node_idx = action
 
         reward = 0
-        action_node = self.graph.victim_list[action_node_idx]
+        action_node = self.graph.nodes_list[action_node_idx]
 
         triage_set = set()
         navigation_set = set()
@@ -109,15 +109,16 @@ class AsistEnv:
 
         if not valid_action:
             reward -= 100
+            # print("ha")
         else:
-            print(action)
+            # print(action)
+            edge_cost = self.graph.get_edge_cost(self.curr_pos, action_node)
             self.prev_pos = self.curr_pos
             self.curr_pos = action_node
-            edge_cost = self.graph.get_edge_cost(self.curr_pos, action_node)
             reward -= edge_cost
             self.total_cost += edge_cost
             if action_node.type == graph.NodeType.Victim:
-                triage_cost, triage_score = action_node.triage()
+                triage_cost, triage_score = self.graph.triage(action_node)
                 reward -= triage_cost
                 self.total_cost += triage_cost
                 self.score += triage_score
@@ -126,7 +127,6 @@ class AsistEnv:
         done = False
         if self.graph.no_more_victims() or self.total_cost > 1000:
             done = True
-
         return self.get_observation(), reward, done
 
     def step_for_console_play(self, action):

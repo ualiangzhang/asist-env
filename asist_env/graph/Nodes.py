@@ -61,8 +61,8 @@ class VictimNode(Node):
         assert isinstance(victim_type, VictimType)
         super().__init__(id, name)
         self.type = NodeType.Victim
-        self.type_original = NodeType.Victim
         self.victim_type = victim_type
+        self.victim_type_original = victim_type
         self.loc = location
 
     def yellow_death(self):

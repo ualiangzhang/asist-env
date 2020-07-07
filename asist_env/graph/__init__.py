@@ -42,7 +42,15 @@ class Graph(nx.Graph):
 
     def reset(self):
         for vn in self.victim_list:
-            vn.type = vn.type_original
+            vn.victim_type = vn.victim_type_original
+
+        self.green_victim_list.clear()
+        self.yellow_victim_list.clear()
+        self.safe_victim_list.clear()
+        self.dead_victim_list.clear()
+
+        for victim in self.victim_list:
+            self.victimType2list[victim.victim_type].append(victim)
 
     def add_victim(self, victim_type, id=None, name=None, location=None):
         """ Register a victim node to graph and append the corresponding lists
@@ -264,13 +272,13 @@ class Graph(nx.Graph):
             return 0, 0
         # TODO: Need to discuss cost and reward here
         elif victim.victim_type == VictimType.Green:
-            victim.victim_type = VictimType.Safe
             self.green_victim_list.remove(victim)
+            victim.victim_type = VictimType.Safe
             self.safe_victim_list.append(victim)
             return 7, 10
         else: # A Yellow Victim
-            victim.victim_type = VictimType.Safe
             self.yellow_victim_list.remove(victim)
+            victim.victim_type = VictimType.Safe
             self.safe_victim_list.append(victim)
             return 15, 30
 
