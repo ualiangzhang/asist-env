@@ -143,6 +143,68 @@ class AsistEnv:
 
     def get_observation(self):
         """ Observation is an array of the following:
+        [room_observed, portal_observed, victim_observed, device_info]
+        all nodes are listed and set to 0 initially, if the agent is in neighbor to
+        any of those nodes, the value is set to 1, for victims, types are indicated
+        as (1, 2, 3, 4) being (green, yellow, safe, dead) respectively
+        lets say the map has one portal_pair, two rooms, and one yellow victim
+        [start, r1 | p0-start, p0-r1 | vy1] + [device] could be [0, 1, 1, 0, 1] + [0]
+        :return: the observation array
+        """
+        room_observation = np.zeros(len(self.graph.room_list))
+        portal_observation = np.zeros(len(self.graph.portal_list) * 2)
+        victim_observation = np.zeros(len(self.graph.victim_list))
+
+        for n in self.graph.get_neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Room:
+                room_observation[self.graph.room_list.index(n)] = 1
+            if n.type == graph.NodeType.Portal:
+                # need to find the exact portal index since the portal list stores tuples of portals
+                idx = None
+                for pl_idx, pt in enumerate(self.graph.portal_list):
+                    if n.id == pt[0].id:
+                        idx = pl_idx * 2
+                        break
+                    elif n.id == pt[1].id:
+                        idx = pl_idx * 2 + 1
+                        break
+                portal_observation[idx] = 1
+            if n.type == graph.NodeType.Victim:
+                victim_observation[self.graph.victim_list.index(n)] = 1 + n.victim_type.value
+        device_info = np.array([self.get_device_info()])
+        return np.concatenate([room_observation, portal_observation, victim_observation, device_info])
+
+    def get_observation_debug(self):
+        """ Debug observation, to be deleted
+        :return: the observation array with value and node id as tuple
+        """
+        room_observation = [(0, haha.id) for haha in self.graph.room_list]
+        portal_observation = []
+        for haha in self.graph.portal_list:
+            portal_observation.append((0, haha[0].id))
+            portal_observation.append((0, haha[1].id))
+        victim_observation = [(0, haha.id) for haha in self.graph.victim_list]
+        for n in self.graph.get_neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Room:
+                room_observation[self.graph.room_list.index(n)] = (1, n.id)
+            if n.type == graph.NodeType.Portal:
+                # need to find the exact portal index since the portal list stores tuples of portals
+                idx = None
+                for pl_idx, pt in enumerate(self.graph.portal_list):
+                    if n.id == pt[0].id:
+                        idx = pl_idx * 2
+                        break
+                    elif n.id == pt[1].id:
+                        idx = pl_idx * 2 + 1
+                        break
+                portal_observation[idx] = (1, n.id)
+            if n.type == graph.NodeType.Victim:
+                victim_observation[self.graph.victim_list.index(n)] = (1 + n.victim_type.value, n.id)
+        device_info = np.array([self.get_device_info()])
+        return room_observation + portal_observation + victim_observation
+
+    def get_observation_old(self):
+        """ (Discarded) Observation is an array of the following:
         [cur_pos, device_info, victim_1_state, victim_2_state, victim_3_state, ...]
         :return: the above array
         """
@@ -194,13 +256,13 @@ class AsistEnv:
         return action_space, action_space_str
 
     def get_device_info(self):
-        # Nothing: 0, Yellow: 1, Green: 2
+        # Nothing: 0,  Green: 1, Yellow: 2,
         if self.curr_pos.type == graph.NodeType.Portal:
             connected_room = self.graph.id2node[self.curr_pos.linked_portal.get_connected_room_id()]
             if self.graph.has_yellow_victim_in(connected_room):
-                return 1
-            elif self.graph.has_green_victim_in(connected_room):
                 return 2
+            elif self.graph.has_green_victim_in(connected_room):
+                return 1
         return 0
 
     def get_device_info_for_console_play(self):
@@ -221,6 +283,13 @@ class AsistEnv:
             print("Total Reward:", str(self.score))
             print("Device Info:", self.get_device_info_for_console_play())
             print()
+
+            print(self.get_observation())
+
+            # for idx, obs in enumerate(self.get_observation()):
+            #     print(str(obs), end=" ")
+            #     if idx %5 == 0:
+            #         print()
 
             action_space, action_space_str = self.get_action_space_for_console_play()
             print("Possible Actions:")
@@ -244,5 +313,5 @@ if __name__ == '__main__':
     victim_data = pd.read_csv(victims_csv)
 
     env = AsistEnv(portal_data, room_data, victim_data, "as")
-    # env.console_play()
-    print(env.get_observation())
+    env.console_play()
+    # print(env.get_observation())
