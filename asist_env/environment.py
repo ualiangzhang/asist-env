@@ -66,12 +66,95 @@ class AsistEnv:
         self.total_cost = 0
         self.score = 0
         self.prev_pos = None
-        return self.get_observation()
+        # return self.get_observation()
+        return self.get_unorganized_observation()
 
     def get_victim_list_size(self):
         return len(self.graph.victim_list)
 
     def step(self, action):
+        """ The global view
+        :param performance: 0: navigate, 1: enter, 2: triage
+        :param action_node: the index of the node for your performance
+        :return: (observation, reward)
+        """
+        # assert performance in [0, 1, 2]
+        raise NotImplementedError
+        performance, action_node_idx = action
+
+        reward = 0
+        action_node = self.graph.nodes_list[action_node_idx]
+
+        triage_set = set()
+        navigation_set = set()
+        portal_enter_set = set()
+        for n in self.graph.neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Portal:
+                if self.curr_pos.type == graph.NodeType.Portal and \
+                        n.is_same_portal(self.curr_pos):
+                    portal_enter_set.add(n)
+                else:
+                    navigation_set.add(n)
+            elif n.type == graph.NodeType.Victim:
+                triage_set.add(n)
+            elif n.type == graph.NodeType.Room:
+                navigation_set.add(n)
+
+        valid_action = True
+        if performance == 0 and action_node not in navigation_set:
+            valid_action = False
+        if performance == 1 and action_node not in portal_enter_set:
+            valid_action = False
+        if performance == 2 and action_node not in triage_set:
+            valid_action = False
+
+        if not valid_action:
+            reward -= 100
+            # print("ha")
+        else:
+            # print(action)
+            edge_cost = self.graph.get_edge_cost(self.curr_pos, action_node)
+            self.prev_pos = self.curr_pos
+            self.curr_pos = action_node
+            reward -= edge_cost
+            self.total_cost += edge_cost
+            if action_node.type == graph.NodeType.Victim:
+                triage_cost, triage_score = self.graph.triage(action_node)
+                reward -= triage_cost
+                self.total_cost += triage_cost
+                self.score += triage_score
+                reward += triage_score * self.positive_reward_multiplier
+
+        done = False
+        if self.graph.no_more_victims() or self.total_cost > 1000:
+            done = True
+        return self.get_observation(), reward, done
+
+    def step_unorganized(self, action):
+        action_node = self.graph.nodes_list[action]
+        reward = 0
+        if not any(action_node.id == n.id for n in self.graph.neighbors(self.curr_pos)):
+            reward -= 100
+        else:
+            # print(action)
+            edge_cost = self.graph.get_edge_cost(self.curr_pos, action_node)
+            self.prev_pos = self.curr_pos
+            self.curr_pos = action_node
+            reward -= edge_cost
+            self.total_cost += edge_cost
+            if action_node.type == graph.NodeType.Victim:
+                triage_cost, triage_score = self.graph.triage(action_node)
+                reward -= triage_cost
+                self.total_cost += triage_cost
+                self.score += triage_score
+                reward += triage_score * self.positive_reward_multiplier
+
+        done = False
+        if self.graph.no_more_victims() or self.total_cost > 1000:
+            done = True
+        return self.get_observation(), reward, done
+
+    def step_old(self, action):
         """ The global view
         :param performance: 0: navigate, 1: enter, 2: triage
         :param action_node: the index of the node for your performance
@@ -173,6 +256,16 @@ class AsistEnv:
                 victim_observation[self.graph.victim_list.index(n)] = 1 + n.victim_type.value
         device_info = np.array([self.get_device_info()])
         return np.concatenate([room_observation, portal_observation, victim_observation, device_info])
+
+    def get_unorganized_observation(self):
+        node_observation = np.zeros(len(self.graph.nodes_list))
+        for n in self.graph.get_neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Room or n.type == graph.NodeType.Portal:
+                node_observation[self.graph.nodes_list.index(n)] = 1
+            if n.type == graph.NodeType.Victim:
+                node_observation[self.graph.nodes_list.index(n)] = 1 + n.victim_type.value
+        device_info = np.array([self.get_device_info()])
+        return np.concatenate([node_observation, device_info])
 
     def get_observation_debug(self):
         """ Debug observation, to be deleted
