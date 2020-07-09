@@ -70,15 +70,24 @@ class Agent():
             action = T.argmax(actions).item()
         else:
             action = np.random.choice(self.action_space)
+        return action
 
+    def choose_action_narrow(self, observation):
+        if np.random.random() > self.epsilon:
+            state = T.tensor([observation]).float().to(self.Q_eval.device)
+            actions = self.Q_eval.forward(state)
+            # action = T.argmax(actions).item()
+            mask = T.from_numpy(observation[:-1]).ge(0.1).float().to(self.Q_eval.device)
+            action = T.argmax((T.min(actions).abs() + actions) * mask).item()
+            # print((T.min(actions).abs() + actions) * mask)
+        else:
+            # print(T.where(T.tensor(observation[:-3] > 0))[0])
+            action = np.random.choice(T.where(T.tensor(observation[:-1]) > 0)[0])
+        # print(observation)
+        # print(action)
         return action
 
     def learn(self):
-        """
-            Problem: memory filled up with zeros, and we cannot learn from a bunch of zero. Some solution:
-            1. let the agent play randomly, until it fills up the entirety of its memory, then start learning
-            2. start learning as soon as you fills up the batch size of memory
-        """
         # if memory counter is less than batch size
         if self.mem_cntr < self.batch_size:
             return
