@@ -1,10 +1,12 @@
 from environment import AsistEnv
 from graph.Nodes import NodeType
+import visualizer
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import random
+
 
 def max_action(Q, state, action_space):
     values = np.array([Q[state, action]] for action in action_space)
@@ -53,6 +55,8 @@ def possible_action(env):
         p = 0
     return p, env.graph.nodes_list.index(act)
 
+
+
 if __name__ == '__main__':
     data_folder = Path("data")
 
@@ -67,12 +71,12 @@ if __name__ == '__main__':
     env = AsistEnv(portal_data, room_data, victim_data, "as")
 
     max_episode_steps = 1000
-    n_games = 10000
+    n_games = 30000
     alpha = 0.1
     gamma = 0.99
-    eps = 0.3
+    eps = 0.25
 
-    inspect_interval = 50
+    inspect_interval = 100
 
     performance_space = [0, 1, 2]
     action_node_space = list(range(len(env.graph.nodes_list)))
@@ -81,21 +85,23 @@ if __name__ == '__main__':
 
     Q = {}
     states = set()
-    # for state in states:
-    #     for action in action_space:
-    #         Q[state, action] = 0
+
+
 
     score = 0
     total_rewards = np.zeros(n_games)
     for i in range(n_games):
         done = False
         state = env.reset()
-        states.add(state)
-        for a in action_space:
-            Q[state, a] = 0
+        if state not in states:
+            states.add(state)
+            for a in action_space:
+                Q[state, a] = 0
         if i % inspect_interval == 0 and i > 0:
             print('episode ', i, 'score ', score, 'epsilon %.3f' % eps, end=" ")
         score = 0
+        action_sequence = [(0, env.start_node_id)]
+        step_counter = 0
         for iter in range(max_episode_steps):
             if np.random.random() < eps:
                 # action = random_action(performance_space, action_node_space)
@@ -104,11 +110,13 @@ if __name__ == '__main__':
                 # action = max_action(Q, state, action_space)
                 action = max_action_limit(Q, state, env)
 
-            # action = random_action(performance_space, action_node_space) if np.random.random() < eps \
-            #     else max_action(Q, state, action_space)
-            # print(action)
             state_, reward, done = env.step(action)
-            # print(action, state_)
+
+            if i % inspect_interval == 0:
+                step_counter += 1
+                action_sequence.append((step_counter, env.curr_pos.id))
+
+
             if state_ not in states:
                 states.add(state_)
                 for a in action_space:
@@ -123,7 +131,8 @@ if __name__ == '__main__':
         total_rewards[i] = score
         # eps = eps - 2/n_games if eps > 0.01 else 0.01
         if i % inspect_interval == 0 and i > 0:
-            print(" victims_saved:", len(env.graph.safe_victim_list))
+            print(" victims_saved:", len(env.graph.safe_victim_list), " total_cost:", str(env.total_cost))
+            visualizer.animate_graph_training(action_sequence, portal_data, room_data, victim_data)
 
     mean_rewards = np.zeros(n_games)
     for t in range(n_games):
