@@ -133,8 +133,11 @@ class AsistEnv:
     def step_unorganized(self, action):
         action_node = self.graph.nodes_list[action]
         reward = 0
+        # print(action_node.id)
         if not any(action_node.id == n.id for n in self.graph.neighbors(self.curr_pos)):
             reward -= 100
+            # print(action_node.id)
+            print("he")
         else:
             # print(action)
             edge_cost = self.graph.get_edge_cost(self.curr_pos, action_node)
@@ -152,7 +155,7 @@ class AsistEnv:
         done = False
         if self.graph.no_more_victims() or self.total_cost > 1000:
             done = True
-        return self.get_observation(), reward, done
+        return self.get_unorganized_observation(), reward, done
 
     def step_old(self, action):
         """ The global view
@@ -254,8 +257,10 @@ class AsistEnv:
                 portal_observation[idx] = 1
             if n.type == graph.NodeType.Victim:
                 victim_observation[self.graph.victim_list.index(n)] = 1 + n.victim_type.value
-        device_info = np.array([self.get_device_info()])
-        return np.concatenate([room_observation, portal_observation, victim_observation, device_info])
+        # other_info = np.array([self.get_device_info(), self.total_cost, self.score])
+        other_info = np.array([self.get_device_info()])
+
+        return np.concatenate([room_observation, portal_observation, victim_observation, other_info])
 
     def get_unorganized_observation(self):
         node_observation = np.zeros(len(self.graph.nodes_list))
@@ -264,11 +269,22 @@ class AsistEnv:
                 node_observation[self.graph.nodes_list.index(n)] = 1
             if n.type == graph.NodeType.Victim:
                 node_observation[self.graph.nodes_list.index(n)] = 1 + n.victim_type.value
-        device_info = np.array([self.get_device_info()])
-        return np.concatenate([node_observation, device_info])
+        # other_info = np.array([self.get_device_info(), self.total_cost, self.score])
+        other_info = np.array([self.get_device_info()])
+        return np.concatenate([node_observation, other_info])
+
+    def get_unorganized_observation_debug(self):
+        node_observation = [(0, haha.id) for haha in self.graph.nodes_list]
+        for n in self.graph.get_neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Room or n.type == graph.NodeType.Portal:
+                node_observation[self.graph.nodes_list.index(n)] = (1, n.id)
+            if n.type == graph.NodeType.Victim:
+                node_observation[self.graph.nodes_list.index(n)] = (1 + n.victim_type.value, n.id)
+        return node_observation
+
 
     def get_observation_debug(self):
-        """ Debug observation, to be deleted
+        """ Debug observation, log out nodes name and value
         :return: the observation array with value and node id as tuple
         """
         room_observation = [(0, haha.id) for haha in self.graph.room_list]
@@ -377,7 +393,7 @@ class AsistEnv:
             print("Device Info:", self.get_device_info_for_console_play())
             print()
 
-            print(self.get_observation())
+            print(self.get_unorganized_observation())
 
             # for idx, obs in enumerate(self.get_observation()):
             #     print(str(obs), end=" ")
