@@ -14,28 +14,34 @@
 **Time:** Thursday, July 9, 2020, 3:32:38 PM \
 **Parameters:** `gamma=0.99, lr=0.003, epsilon=1.0, eps_ends=0.005, eps_dec=5e-4, batch_size=64` \
 **Model:** Deep Q-Network, Epsilon-Decay, New Observation Space, Restricted Action Space, One Hidden Layer, size 256 \
+![DQN_E005](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-09/dqn_E005.png)
 
 **Index:** 3 \
 **Time:** Thursday, July 9, 2020, 3:36:22 PM \
 **Parameters:** `gamma=0.99, lr=0.003, epsilon=1.0, eps_ends=0.015, eps_dec=5e-4, batch_size=64` \
 **Model:** Deep Q-Network, Epsilon-Decay, New Observation Space, Restricted Action Space, One Hidden Layer, size 256 \
+![DQN_E015](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-09/dqn_E015.png)
 
 **Index:** 4 \
 **Time:** Thursday, July 9, 2020, 4:17:09 PM \
 **Parameters:** `gamma=0.99, lr=0.003, epsilon=1.0, eps_ends=0.030, eps_dec=5e-4, batch_size=64` \
 **Model:** Deep Q-Network, Epsilon-Decay, New Observation Space, Restricted Action Space, One Hidden Layer, size 256 \
+![DQN_E030](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-09/dqn_E030.png)
 
 **Index:** 5 \
 **Time:** Thursday, July 9, 2020, 4:19:17 PM \
 **Parameters:** `gamma=0.99, lr=0.003, epsilon=1.0, eps_ends=0.035, eps_dec=5e-4, batch_size=64` \
 **Model:** Deep Q-Network, Epsilon-Decay, New Observation Space, Restricted Action Space, One Hidden Layer, size 256 \
+![DQN_E035](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-09/dqn_E035.png)
 
 **Index:** 6 \
 **Time:** Thursday, July 9, 2020, ‏4:24:26 PM \
 **Parameters:** `gamma=0.99, lr=0.003, epsilon=1.0, eps_ends=0.040, eps_dec=5e-4, batch_size=64` \
 **Model:** Deep Q-Network, Epsilon-Decay, New Observation Space, Restricted Action Space, One Hidden Layer, size 256 \
+![DQN_E040](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-09/dqn_E040.png)
 
 **Index:** 7 \
 **Time:** Thursday, July 9, 2020, ‏4:25:48 PM \
 **Parameters:** `gamma=0.99, lr=0.003, epsilon=1.0, eps_ends=0.045, eps_dec=5e-4, batch_size=64` \
 **Model:** Deep Q-Network, Epsilon-Decay, New Observation Space, Restricted Action Space, One Hidden Layer, size 256 \
+![DQN_E045](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-09/dqn_E045.png)
