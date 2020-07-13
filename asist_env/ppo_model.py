@@ -53,7 +53,7 @@ class ActorCritic(nn.Module):
     def act(self, state, memory):
         state = torch.from_numpy(state).float().to(device)
         action_probs = self.action_layer(state)
-        mask = state[:-1].ge(0.1).float().to(device)
+        mask = state[:-2].ge(0.1).float().to(device)
         dist = Categorical(action_probs * mask)
         action = dist.sample()
 
@@ -147,7 +147,7 @@ def main():
 
     state_dim = len(env.get_observation())
 
-    action_dim = state_dim - 1
+    action_dim = state_dim - 2
     render = False
     solved_reward = 2300         # stop training if avg_reward > solved_reward
     log_interval = 20           # print avg reward in the interval

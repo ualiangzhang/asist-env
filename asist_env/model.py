@@ -77,12 +77,12 @@ class Agent():
             state = T.tensor([observation]).float().to(self.Q_eval.device)
             actions = self.Q_eval.forward(state)
             # action = T.argmax(actions).item()
-            mask = T.from_numpy(observation[:-1]).ge(0.1).float().to(self.Q_eval.device)
+            mask = T.from_numpy(observation[:-2]).ge(0.1).float().to(self.Q_eval.device)
             action = T.argmax((T.min(actions).abs() + actions) * mask).item()
             # print((T.min(actions).abs() + actions) * mask)
         else:
             # print(T.where(T.tensor(observation[:-3] > 0))[0])
-            action = np.random.choice(T.where(T.tensor(observation[:-1]) > 0)[0])
+            action = np.random.choice(T.where(T.tensor(observation[:-2]) > 0)[0])
         # print(observation)
         # print(action)
         return action

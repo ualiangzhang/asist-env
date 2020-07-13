@@ -273,6 +273,26 @@ class AsistEnv:
         other_info = np.array([self.get_device_info()])
         return np.concatenate([node_observation, other_info])
 
+    def get_unorganized_observation_simplified(self):
+        node_observation = np.zeros(len(self.graph.nodes_list))
+        for n in self.graph.get_neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Room or n.type == graph.NodeType.Portal:
+                node_observation[self.graph.nodes_list.index(n)] = 1
+            if n.type == graph.NodeType.Victim and \
+                    (n.victim_type == graph.VictimType.Green or n.victim_type == graph.VictimType.Yellow):
+                node_observation[self.graph.nodes_list.index(n)] = 1
+        # other_info = np.array([self.get_device_info(), self.total_cost, self.score])
+        device_num = self.get_device_info()
+        if device_num == 0:
+            device_info = [0, 0]
+        elif device_num == 1:
+            device_info = [1, 0]
+        else:
+            device_info = [1, 1]
+
+        device_info = np.array(device_info)
+        return np.concatenate([node_observation, device_info])
+
     def get_unorganized_observation_debug(self):
         node_observation = [(0, haha.id) for haha in self.graph.nodes_list]
         for n in self.graph.get_neighbors(self.curr_pos):
