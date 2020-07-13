@@ -21,7 +21,7 @@ if __name__ == '__main__':
     num_of_state = len(env.get_observation())
 
     agent = Agent(gamma=0.99, epsilon=1.0, batch_size=64, n_actions=num_of_state-1,
-                  eps_ends=0.05, input_dims=[num_of_state], lr=0.003, eps_dec=5e-5)
+                  eps_ends=0.35, input_dims=[num_of_state], lr=0.001, eps_dec=5e-5)
     scores, eps_history = [], []
     avg_scores = []
     n_games = 1000
