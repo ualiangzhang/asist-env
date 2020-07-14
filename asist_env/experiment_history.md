@@ -130,43 +130,43 @@
 **Model:** Proximal Policy Optimization, Uniform Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-14/ppo_clip02_lr00003_ut300_KEpoch6.png)
 
-**Index:** 20 \
+**Index:** 22 \
 **Time:** Tuesday, July 14, 2020, 10:53:30 AM \
 **Parameters:** `gamma=0.99, lr=0.0003, epa_clip=0.2, update_timestep=800, K_Epoch=6, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Uniform Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-14/ppo_clip02_lr00003_ut800_KEpoch6.png)
 
-**Index:** 20 \
+**Index:** 23 \
 **Time:** Tuesday, July 14, 2020, 10:53:30 AM \
 **Parameters:** `gamma=0.99, lr=0.0003, epa_clip=0.2, update_timestep=2000, K_Epoch=6, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Uniform Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-14/ppo_clip02_lr00003_ut2000_KEpoch6.png)
 
-**Index:** 20 \
+**Index:** 24 \
 **Time:** Tuesday, July 14, 2020, 10:53:30 AM \
 **Parameters:** `gamma=0.99, lr=0.0003, epa_clip=0.2, update_timestep=2000, K_Epoch=10, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Uniform Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-14/ppo_clip02_lr00003_ut2000_KEpoch10.png)
 
-**Index:** 20 \
+**Index:** 25 \
 **Time:** Tuesday, July 14, 2020, 10:53:30 AM \
 **Parameters:** `gamma=0.99, lr=0.0003, epa_clip=0.2, update_timestep=5000, K_Epoch=10, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Uniform Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-14/ppo_clip02_lr00003_ut5000_KEpoch10.png)
 
-**Index:** 20 \
+**Index:** 26 \
 **Time:** Tuesday, July 14, 2020, 10:53:30 AM \
 **Parameters:** `gamma=0.99, lr=0.0003, epa_clip=0.3, update_timestep=200, K_Epoch=1, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Uniform Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-14/ppo_clip03_lr00003_ut200_KEpoch1.png)
 
-**Index:** 20 \
+**Index:** 27 \
 **Time:** Tuesday, July 14, 2020, 10:53:30 AM \
 **Parameters:** `gamma=0.99, lr=0.0001, epa_clip=0.25, update_timestep=500, K_Epoch=4, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Uniform Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-14/ppo_clip025_lr00001_ut500_KEpoch4.png)
 
-**Index:** 20 \
+**Index:** 28 \
 **Time:** Tuesday, July 14, 2020, 10:53:30 AM \
 **Parameters:** `gamma=0.99, lr=0.0001, epa_clip=0.25, update_timestep=500, K_Epoch=4, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Uniform Observation Space, Restricted Action Space, Hidden Layer Size 128 \
