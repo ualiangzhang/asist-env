@@ -56,8 +56,8 @@ class AsistEnv:
         self.total_cost = 0
         self.score = 0
         self.positive_reward_multiplier = 10
+        self.visit_node_sequence = []
         self.victim_data = victim_data
-        # TODO: Add Memory (Graph)
 
     def reset(self):
         self.curr_pos = self.graph[self.start_node_id]
@@ -66,6 +66,7 @@ class AsistEnv:
         self.total_cost = 0
         self.score = 0
         self.prev_pos = None
+        self.visit_node_sequence.clear()
         # return self.get_observation()
         return self.get_unorganized_observation()
 
@@ -140,6 +141,7 @@ class AsistEnv:
             print("he")
         else:
             # print(action)
+            self.visit_node_sequence.append(action_node.id)
             edge_cost = self.graph.get_edge_cost(self.curr_pos, action_node)
             self.prev_pos = self.curr_pos
             self.curr_pos = action_node
@@ -272,6 +274,26 @@ class AsistEnv:
         # other_info = np.array([self.get_device_info(), self.total_cost, self.score])
         other_info = np.array([self.get_device_info()])
         return np.concatenate([node_observation, other_info])
+
+    def get_unorganized_observation_simplified(self):
+        node_observation = np.zeros(len(self.graph.nodes_list))
+        for n in self.graph.get_neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Room or n.type == graph.NodeType.Portal:
+                node_observation[self.graph.nodes_list.index(n)] = 1
+            if n.type == graph.NodeType.Victim and \
+                    (n.victim_type == graph.VictimType.Green or n.victim_type == graph.VictimType.Yellow):
+                node_observation[self.graph.nodes_list.index(n)] = 1
+        # other_info = np.array([self.get_device_info(), self.total_cost, self.score])
+        device_num = self.get_device_info()
+        if device_num == 0:
+            device_info = [0, 0]
+        elif device_num == 1:
+            device_info = [1, 0]
+        else:
+            device_info = [1, 1]
+
+        device_info = np.array(device_info)
+        return np.concatenate([node_observation, device_info])
 
     def get_unorganized_observation_debug(self):
         node_observation = [(0, haha.id) for haha in self.graph.nodes_list]
