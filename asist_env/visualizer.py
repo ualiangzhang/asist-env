@@ -85,7 +85,7 @@ def animate_graph_training(animation_sequence, portal_data, room_data, victim_da
         #     plt.close(fig)
 
         ax.clear()
-        curr_node = animation_frame[1]
+        curr_node = animation_frame
         if graph[curr_node].type == NodeType.Victim:
             cost, reward = graph.triage(graph[curr_node])
 
@@ -94,7 +94,7 @@ def animate_graph_training(animation_sequence, portal_data, room_data, victim_da
                 font_size=7, width=0.5)
         # nx.draw_networkx_edge_labels(graph, pos, edge_labels=weight_labels, font_size=7)
         # ax.set_title("Steps: " + str(animation_frame[0]) + "  Score: " + str(animation_frame[2]))
-        ax.set_title("Steps: " + str(animation_frame[0]))
+        # ax.set_title("Steps: " + str(animation_frame[0]))
 
     fig, ax = plt.subplots(figsize=(6,6))
     fig.subplots_adjust(left=0, bottom=0, right=1, top=0.9, wspace=None, hspace=None)

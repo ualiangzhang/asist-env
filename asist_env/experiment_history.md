@@ -78,42 +78,42 @@
 
 **Index:** 13 \
 **Time:** Monday, July 13, 2020, ‏12:18:22 PM \
-**Parameters: `gamma=0.99, lr=0.0002, epa_clip=0.1, update_timestep=6000, betas=(0.9, 0.999)`** \
+**Parameters:** `gamma=0.99, lr=0.0002, epa_clip=0.1, update_timestep=6000, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Specific Victim Type Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-13/ppo_clip01_lr00002_ut6000.png)
 
 **Index:** 14 \
 **Time:** Monday, July 13, 2020, ‏12:18:22 PM \
-**Parameters: `gamma=0.99, lr=0.0002, epa_clip=0.2, update_timestep=6000, betas=(0.9, 0.999)`** \
+**Parameters:** `gamma=0.99, lr=0.0002, epa_clip=0.2, update_timestep=6000, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Specific Victim Type Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-13/ppo_clip02_lr00002_ut6000.png)
 
 **Index:** 15 \
 **Time:** Monday, July 13, 2020, ‏12:18:22 PM \
-**Parameters: `gamma=0.99, lr=0.0002, epa_clip=0.3, update_timestep=6000, betas=(0.9, 0.999)`** \
+**Parameters:** `gamma=0.99, lr=0.0002, epa_clip=0.3, update_timestep=6000, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Specific Victim Type Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-13/ppo_clip03_lr00002_ut6000.png)
 
 **Index:** 16 \
 **Time:** Monday, July 13, 2020, ‏12:20:03 PM \
-**Parameters: `gamma=0.99, lr=0.00003, epa_clip=0.3, update_timestep=6000, betas=(0.9, 0.999)`** \
+**Parameters:** `gamma=0.99, lr=0.00003, epa_clip=0.3, update_timestep=6000, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Specific Victim Type Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-13/ppo_clip03_lr000003_ut6000.png)
 
 **Index:** 17 \
 **Time:** Monday, July 13, 2020, ‏2:27:31 PM \
-**Parameters: `gamma=0.99, lr=0.0002, epa_clip=0.5, update_timestep=6000, betas=(0.9, 0.999)`** \
+**Parameters:** `gamma=0.99, lr=0.0002, epa_clip=0.5, update_timestep=6000, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Specific Victim Type Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-13/ppo_clip05_lr00003_ut6000.png)
 
 **Index:** 18 \
 **Time:** Monday, July 13, 2020, ‏12:17:32 PM \
-**Parameters: `gamma=0.99, lr=0.0002, epa_clip=0.7, update_timestep=6000, betas=(0.9, 0.999)`** \
+**Parameters:** `gamma=0.99, lr=0.0002, epa_clip=0.7, update_timestep=6000, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Specific Victim Type Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-13/ppo_clip07_lr00002_ut6000.png)
 
 **Index:** 19 \
 **Time:** Monday, July 13, 2020, ‏2:27:31 PM \
-**Parameters: `gamma=0.99, lr=0.00003, epa_clip=0.7, update_timestep=6000, betas=(0.9, 0.999)`** \
+**Parameters:** `gamma=0.99, lr=0.00003, epa_clip=0.7, update_timestep=6000, betas=(0.9, 0.999)` \
 **Model:** Proximal Policy Optimization, Specific Victim Type Observation Space, Restricted Action Space, Hidden Layer Size 256 \
 ![PPO](https://github.com/vorugantia/asist-env/blob/master/asist_env/images/RL-runs/7-13/ppo_clip07_lr000003_ut6000.png)

@@ -6,6 +6,8 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import argparse
+# from visualizer import animate_graph_training
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -131,8 +133,8 @@ class PPO:
         self.policy_old.load_state_dict(self.policy.state_dict())
 
 def main():
-    ############## Hyperparameters ##############
-    # creating environment
+
+    ############## creating environment ##############
     data_folder = Path("data")
 
     portals_csv = data_folder / "sparky_portals.csv"
@@ -147,21 +149,43 @@ def main():
 
     state_dim = len(env.get_observation())
 
+    ############## parsing parameter ##############
+    parser = argparse.ArgumentParser(description='hyper parameters for PPO')
+    parser.add_argument('-lr', type=float, help='Learning Rate')
+    parser.add_argument('-clip', type=float, help='Epsilon Tick')
+    parser.add_argument('-ut', '--update_timestep', type=int, help='update policy every n timesteps')
+    parser.add_argument('-k','--k_epochs', type=int, help='update policy for K epochs')
+    parser.add_argument('-me','--max_episodes', type=int, help='how many episodes')
+    args = parser.parse_args()
+
+
+    ############## Hyperparameters ##############
     action_dim = state_dim - 2
     render = False
-    solved_reward = 2300         # stop training if avg_reward > solved_reward
+    solved_reward = 2400         # stop training if avg_reward > solved_reward
     log_interval = 20           # print avg reward in the interval
-    max_episodes = 10000        # max training episodes
+    max_episodes = 5000        # max training episodes
     max_timesteps = 1200         # max timesteps in one episode
     n_latent_var = 256           # number of variables in hidden layer
-    update_timestep = 6000      # update policy every n timesteps
-    lr = 0.0002
+    update_timestep = 5000      # update policy every n timesteps
+    lr = 0.0003
     betas = (0.9, 0.999)
     gamma = 0.99                # discount factor
-    K_epochs = 10                # update policy for K epochs
-    eps_clip = 0.7              # clip parameter for PPO
+    K_epochs = 6                # update policy for K epochs
+    eps_clip = 0.2              # clip parameter for PPO
     # random_seed = None
     #############################################
+    if args.lr is not None:
+        lr = args.lr
+    if args.clip is not None:
+        eps_clip = args.clip
+    if args.update_timestep is not None:
+        update_timestep = args.update_timestep
+    if args.k_epochs is not None:
+        K_epochs = args.k_epochs
+    if args.max_episodes is not None:
+        max_episodes = args.max_episodes
+
 
     # if random_seed:
     #     torch.manual_seed(random_seed)
@@ -220,7 +244,8 @@ def main():
             avg_length = int(avg_length/log_interval)
             running_reward = int((running_reward/log_interval))
 
-            print('Episode {} \t avg length: {} \t reward: {}'.format(i_episode, avg_length, running_reward))
+            print('Episode {} \t avg length: {} \t reward: {} \t victims_saved: {}'.format(i_episode, avg_length, running_reward, len(env.graph.safe_victim_list)))
+            # animate_graph_training(env.visit_node_sequence, portal_data, room_data, victim_data)
             running_reward = 0
             avg_length = 0
 
@@ -234,7 +259,7 @@ def main():
     plt.legend(loc="upper left")
     plt.ylabel("score")
     plt.xlabel("episode")
-    plt.savefig('ppo.png')
+    plt.savefig(f'ppo_clip{str(eps_clip).replace(".","")}_lr{str(lr).replace(".","")}_ut{update_timestep}_KEpoch{K_epochs}.png')
 
 if __name__ == '__main__':
     main()

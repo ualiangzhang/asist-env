@@ -56,8 +56,8 @@ class AsistEnv:
         self.total_cost = 0
         self.score = 0
         self.positive_reward_multiplier = 10
+        self.visit_node_sequence = []
         self.victim_data = victim_data
-        # TODO: Add Memory (Graph)
 
     def reset(self):
         self.curr_pos = self.graph[self.start_node_id]
@@ -66,6 +66,7 @@ class AsistEnv:
         self.total_cost = 0
         self.score = 0
         self.prev_pos = None
+        self.visit_node_sequence.clear()
         # return self.get_observation()
         return self.get_unorganized_observation()
 
@@ -140,6 +141,7 @@ class AsistEnv:
             print("he")
         else:
             # print(action)
+            self.visit_node_sequence.append(action_node.id)
             edge_cost = self.graph.get_edge_cost(self.curr_pos, action_node)
             self.prev_pos = self.curr_pos
             self.curr_pos = action_node
