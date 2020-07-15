@@ -21,13 +21,19 @@ victim_data = pd.read_csv(victims_csv)
 
 env = AsistEnvGym(portal_data, room_data, victim_data, "as")
 model = PPO(MlpPolicy, env, verbose=1)
-model.learn(total_timesteps=20000)
+model.learn(total_timesteps=200000)
 obs = env.reset()
 
 score = 0
-for i in range(2000):
+done = False
+while not done:
     action, _states = model.predict(obs)
     obs, rewards, done, info = env.step(action)
     score += rewards
     env.render()
+with open("tmp.txt", 'w') as ff:
+    g = ff.write(str(env.visit_node_sequence))
+print(env.visit_node_sequence)
+print("Victim_saved:", len(env.graph.safe_victim_list))
+print("steps:", len(env.visit_node_sequence))
 print(score)

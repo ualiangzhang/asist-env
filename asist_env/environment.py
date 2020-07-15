@@ -118,9 +118,11 @@ class AsistEnvGym(gym.Env):
     def step(self, action):
         action_node = self.graph.ordered_node_list[action]
         reward = 0
+        done = False
         # print(action_node.id)
         if not any(action_node.id == n.id for n in self.graph.neighbors(self.curr_pos)):
-            reward -= 1000000
+            reward -= 1000
+            done = True
             # print(action_node.id)
             # print("he")
         else:
@@ -138,7 +140,7 @@ class AsistEnvGym(gym.Env):
                 self.score += triage_score
                 reward += triage_score * self.positive_reward_multiplier
 
-        done = False
+
         if self.graph.no_more_victims() or self.total_cost > 1000:
             done = True
         return self._next_observation(), reward, done, {}
