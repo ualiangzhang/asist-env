@@ -13,6 +13,7 @@ class Graph(nx.Graph):
     def __init__(self):
         super(Graph, self).__init__()
         self.nodes_list = []
+        self.ordered_node_list = []
 
         self.room_list = []
         self.portal_list = []
@@ -39,6 +40,15 @@ class Graph(nx.Graph):
         :return: the actual node
         """
         return self.id2node[id_key]
+
+    def make_ordered_node_list(self):
+        for n in self.room_list:
+            self.ordered_node_list.append(n)
+        for n in self.portal_list:
+            self.ordered_node_list.append(n[0])
+            self.ordered_node_list.append(n[1])
+        for n in self.victim_list:
+            self.ordered_node_list.append(n)
 
     def reset(self):
         for vn in self.victim_list:

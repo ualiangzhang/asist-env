@@ -1,6 +1,6 @@
 from model import Agent
 import numpy as np
-from environment import AsistEnv
+from environment import AsistEnvGym
 from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -16,9 +16,9 @@ if __name__ == '__main__':
     room_data = pd.read_csv(rooms_csv)
     victim_data = pd.read_csv(victims_csv)
 
-    env = AsistEnv(portal_data, room_data, victim_data, "as")
+    env = AsistEnvGym(portal_data, room_data, victim_data, "as")
 
-    num_of_state = len(env.get_observation())
+    num_of_state = len(env._next_observation())
 
     agent = Agent(gamma=0.99, epsilon=1.0, batch_size=64, n_actions=num_of_state-2,
                   eps_ends=0.35, input_dims=[num_of_state], lr=0.001, eps_dec=5e-5)
@@ -37,7 +37,7 @@ if __name__ == '__main__':
             #     if idx %5 == 0 and idx != 0:
             #         print()
             action = agent.choose_action_narrow(observation)
-            observation_, reward, done = env.step_unorganized(action)
+            observation_, reward, done, info = env.step(action)
             score += reward
             agent.store_transition(observation, action, reward, observation_, done)
             agent.learn()
