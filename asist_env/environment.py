@@ -2,6 +2,8 @@ import graph
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import gym
+from gym import spaces
 
 class MapParser:
 
@@ -40,10 +42,124 @@ class MapParser:
         for portal_pair in g.portal_list:
             g.connected_portals_to_portals(portal_pair)
 
+        g.make_ordered_node_list()
+
         return g
 
 class AsistEnvRandGen:
     def __init__(self):
+        pass
+
+class AsistEnvGym(gym.Env):
+    """Custom Environment that follows gym interface"""
+    metadata = {'render.modes': ['human']}
+
+    def __init__(self, portal_data, room_data, victim_data, start_node_id):
+        super(AsistEnvGym, self).__init__()
+        self.graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
+        self.start_node_id = start_node_id
+        self.curr_pos = self.graph[start_node_id]
+        self.prev_pos = None
+        self.total_cost = 0
+        self.score = 0
+        self.positive_reward_multiplier = 10
+        self.visit_node_sequence = []
+        self.victim_data = victim_data
+        # Define action and observation space
+        # They must be gym.spaces objects
+        # Example when using discrete actions:
+        self.action_space = spaces.Discrete(len(self.graph.nodes_list))
+        # Example for using image as input:
+        self.observation_space = spaces.Box(low=0, high=1, shape=(len(self.graph.nodes_list)+2,), dtype=np.int)
+
+    def _next_observation(self):
+        room_observation = np.zeros(len(self.graph.room_list))
+        portal_observation = np.zeros(len(self.graph.portal_list) * 2)
+        victim_observation = np.zeros(len(self.graph.victim_list))
+
+        for n in self.graph.get_neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Room:
+                room_observation[self.graph.room_list.index(n)] = 1
+            if n.type == graph.NodeType.Portal:
+                # need to find the exact portal index since the portal list stores tuples of portals
+                idx = None
+                for pl_idx, pt in enumerate(self.graph.portal_list):
+                    if n.id == pt[0].id:
+                        idx = pl_idx * 2
+                        break
+                    elif n.id == pt[1].id:
+                        idx = pl_idx * 2 + 1
+                        break
+                portal_observation[idx] = 1
+            if n.type == graph.NodeType.Victim and \
+                    (n.victim_type == graph.VictimType.Green or n.victim_type == graph.VictimType.Yellow):
+                victim_observation[self.graph.victim_list.index(n)] = 1
+        device_num = self.get_device_info()
+        if device_num == 0:
+            device_info = [0, 0]
+        elif device_num == 1:
+            device_info = [1, 0]
+        else:
+            device_info = [1, 1]
+
+        device_info = np.array(device_info)
+        return np.concatenate([room_observation, portal_observation, victim_observation, device_info])
+
+    def get_device_info(self):
+        # Nothing: 0,  Green: 1, Yellow: 2,
+        if self.curr_pos.type == graph.NodeType.Portal:
+            connected_room = self.graph.id2node[self.curr_pos.linked_portal.get_connected_room_id()]
+            if self.graph.has_yellow_victim_in(connected_room):
+                return 2
+            elif self.graph.has_green_victim_in(connected_room):
+                return 1
+        return 0
+
+    def step(self, action):
+        action_node = self.graph.ordered_node_list[action]
+        reward = 0
+        done = False
+        # print(action_node.id)
+        if not any(action_node.id == n.id for n in self.graph.neighbors(self.curr_pos)):
+            reward -= 1000
+            done = True
+            # print(action_node.id)
+            # print("he")
+        else:
+            # print(action)
+            self.visit_node_sequence.append(action_node.id)
+            edge_cost = self.graph.get_edge_cost(self.curr_pos, action_node)
+            self.prev_pos = self.curr_pos
+            self.curr_pos = action_node
+            reward -= edge_cost
+            self.total_cost += edge_cost
+            if action_node.type == graph.NodeType.Victim:
+                triage_cost, triage_score = self.graph.triage(action_node)
+                reward -= triage_cost
+                self.total_cost += triage_cost
+                self.score += triage_score
+                reward += triage_score * self.positive_reward_multiplier
+
+
+        if self.graph.no_more_victims() or self.total_cost > 1000:
+            done = True
+        return self._next_observation(), reward, done, {}
+
+
+    def reset(self):
+        # Reset the state of the environment to an initial state
+        self.curr_pos = self.graph[self.start_node_id]
+        self.graph.reset()
+        # self.graph = self.graph_copy.copy()
+        self.total_cost = 0
+        self.score = 0
+        self.prev_pos = None
+        self.visit_node_sequence.clear()
+        # return self.get_observation()
+        return self._next_observation()
+
+    def render(self, mode='human', close=False):
+        # Render the environment to the screen
         pass
 
 class AsistEnv:
@@ -68,7 +184,7 @@ class AsistEnv:
         self.prev_pos = None
         self.visit_node_sequence.clear()
         # return self.get_observation()
-        return self.get_unorganized_observation()
+        return self.get_unorganized_observation_simplified()
 
     def get_victim_list_size(self):
         return len(self.graph.victim_list)
@@ -157,7 +273,7 @@ class AsistEnv:
         done = False
         if self.graph.no_more_victims() or self.total_cost > 1000:
             done = True
-        return self.get_unorganized_observation(), reward, done
+        return self.get_unorganized_observation_simplified(), reward, done
 
     def step_old(self, action):
         """ The global view

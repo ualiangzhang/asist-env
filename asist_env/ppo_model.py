@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.distributions import Categorical
-from environment import AsistEnv
+from environment import AsistEnvGym
 from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -145,9 +145,9 @@ def main():
     room_data = pd.read_csv(rooms_csv)
     victim_data = pd.read_csv(victims_csv)
 
-    env = AsistEnv(portal_data, room_data, victim_data, "as")
+    env = AsistEnvGym(portal_data, room_data, victim_data, "as")
 
-    state_dim = len(env.get_observation())
+    state_dim = len(env._next_observation())
 
     ############## parsing parameter ##############
     parser = argparse.ArgumentParser(description='hyper parameters for PPO')
@@ -167,8 +167,8 @@ def main():
     max_episodes = 5000        # max training episodes
     max_timesteps = 1200         # max timesteps in one episode
     n_latent_var = 256           # number of variables in hidden layer
-    update_timestep = 500      # update policy every n timesteps
-    lr = 0.0003
+    update_timestep = 1024      # update policy every n timesteps
+    lr = 0.0001
     betas = (0.9, 0.999)
     gamma = 0.99                # discount factor
     K_epochs = 4                # update policy for K epochs
@@ -210,7 +210,7 @@ def main():
 
             # Running policy_old:
             action = ppo.policy_old.act(state, memory)
-            state, reward, done = env.step_unorganized(action)
+            state, reward, done, info = env.step(action)
 
             # Saving reward and is_terminal:
             memory.rewards.append(reward)
