@@ -68,6 +68,9 @@ class AsistEnvGym(gym.Env):
         # Define action and observation space
         # They must be gym.spaces objects
         # Example when using discrete actions:
+        # max_nei_length = 0
+        # for node in self.graph.nodes_list:
+        #     for n in node.
         self.action_space = spaces.Discrete(len(self.graph.nodes_list))
         # Example for using image as input:
         self.observation_space = spaces.Box(low=0, high=1, shape=(len(self.graph.nodes_list)+2,), dtype=np.int)
@@ -124,7 +127,7 @@ class AsistEnvGym(gym.Env):
             reward -= 1000
             done = True
             # print(action_node.id)
-            # print("he")
+            print("he")
         else:
             # print(action)
             self.visit_node_sequence.append(action_node.id)

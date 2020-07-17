@@ -21,13 +21,13 @@ victim_data = pd.read_csv(victims_csv)
 
 env = AsistEnvGym(portal_data, room_data, victim_data, "as")
 model = PPO(MlpPolicy, env, verbose=1)
-model.learn(total_timesteps=200000)
+model.learn(total_timesteps=8000)
 obs = env.reset()
 
 score = 0
 done = False
 while not done:
-    action, _states = model.predict(obs)
+    action, _states = model.predict(obs, deterministic=True)
     obs, rewards, done, info = env.step(action)
     score += rewards
     env.render()
