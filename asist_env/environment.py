@@ -68,11 +68,15 @@ class AsistEnvGym(gym.Env):
         # Define action and observation space
         # They must be gym.spaces objects
         # Example when using discrete actions:
+
+        ### Experiment #########################
         # max_nei_length = 0
         # for node in self.graph.nodes_list:
-        #     for n in node.
+        #     neighbor_length = len([n for n in self.graph.neighbors(node)])
+        #     max_nei_length = max(max_nei_length, neighbor_length)
+        # self.action_space = spaces.Discrete(max_nei_length)
+
         self.action_space = spaces.Discrete(len(self.graph.nodes_list))
-        # Example for using image as input:
         self.observation_space = spaces.Box(low=0, high=1, shape=(len(self.graph.nodes_list)+2,), dtype=np.int)
 
     def _next_observation(self):
@@ -108,6 +112,30 @@ class AsistEnvGym(gym.Env):
         device_info = np.array(device_info)
         return np.concatenate([room_observation, portal_observation, victim_observation, device_info])
 
+    def _node_observation_debug(self):
+        room_observation = [(0, node.id) for node in self.graph.room_list]
+        portal_observation = [(0, portal.id) for node in self.graph.portal_list for portal in node]
+        victim_observation = [(0, node.id) for node in self.graph.victim_list]
+
+        for n in self.graph.get_neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Room:
+                room_observation[self.graph.room_list.index(n)] = (1, n.id)
+            if n.type == graph.NodeType.Portal:
+                idx = None
+                for pl_idx, pt in enumerate(self.graph.portal_list):
+                    if n.id == pt[0].id:
+                        idx = pl_idx * 2
+                        break
+                    elif n.id == pt[1].id:
+                        idx = pl_idx * 2 + 1
+                        break
+                portal_observation[idx] = (1, n.id)
+            if n.type == graph.NodeType.Victim:
+                victim_observation[self.graph.victim_list.index(n)] = (1, n.id)
+
+        return room_observation + portal_observation + victim_observation
+
+
     def get_device_info(self):
         # Nothing: 0,  Green: 1, Yellow: 2,
         if self.curr_pos.type == graph.NodeType.Portal:
@@ -119,21 +147,41 @@ class AsistEnvGym(gym.Env):
         return 0
 
     def step(self, action):
-        action_node = self.graph.ordered_node_list[action]
+        # action_node = self.graph.ordered_node_list[action]
+        neighbors = [n for n in self.graph.neighbors(self.curr_pos)]
+        num_of_bins = len(self.graph.ordered_node_list) // len(neighbors)
+        action_node = neighbors[min(action // num_of_bins, len(neighbors)-1)]
+
+        # print(action, action_node.id)
+        # print(str([(0, n.id) for n in self.graph.ordered_node_list]))
+        # print(str(self._node_observation_debug()))
+
         reward = 0
         done = False
         # print(action_node.id)
+
+        # neighbors = [n for n in self.graph.neighbors(self.curr_pos)]
+        # if action >= len(neighbors):
         if not any(action_node.id == n.id for n in self.graph.neighbors(self.curr_pos)):
-            reward -= 1000
-            done = True
+            reward -= 5
+            # done = True
+            # print(self.curr_pos.id, action_node.id)
+            # print(self._next_observation())
             # print(action_node.id)
             print("he")
         else:
+            # action_node = neighbors[action]
             # print(action)
             self.visit_node_sequence.append(action_node.id)
             edge_cost = self.graph.get_edge_cost(self.curr_pos, action_node)
             self.prev_pos = self.curr_pos
             self.curr_pos = action_node
+
+            action_node.visited_count += 1
+
+            # if action_node.visited_count == 1:
+            #     reward += 20
+
             reward -= edge_cost
             self.total_cost += edge_cost
             if action_node.type == graph.NodeType.Victim:
@@ -143,9 +191,18 @@ class AsistEnvGym(gym.Env):
                 self.score += triage_score
                 reward += triage_score * self.positive_reward_multiplier
 
+        if self.graph.no_more_victims() or self.total_cost > 800:
+            extra_reward = sum(10 if n.visited_count > 0 else 0 for n in self.graph.ordered_node_list )
+            # all_nodes = [n.visited_count for n in self.graph.ordered_node_list]
+            reward += extra_reward
+            # print(extra_reward)
 
-        if self.graph.no_more_victims() or self.total_cost > 1000:
+            if self.graph.no_more_victims():
+                reward += 100
+
             done = True
+
+        # return self._next_observation(), reward, done, {"node_debug": self._node_observation_debug()}
         return self._next_observation(), reward, done, {}
 
 
@@ -246,7 +303,7 @@ class AsistEnv:
                 reward += triage_score * self.positive_reward_multiplier
 
         done = False
-        if self.graph.no_more_victims() or self.total_cost > 1000:
+        if self.graph.no_more_victims() or self.total_cost > 300:
             done = True
         return self.get_observation(), reward, done
 

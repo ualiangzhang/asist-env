@@ -121,8 +121,8 @@ if __name__ == '__main__':
     # Data Load End
     # =================================
 
-    # plot_graph(save="graph")
-    animate_graph()
+    plot_graph(save="graph_newcolor")
+    # animate_graph()
 
     # plot_random_graph()
 

@@ -62,6 +62,9 @@ class Graph(nx.Graph):
         for victim in self.victim_list:
             self.victimType2list[victim.victim_type].append(victim)
 
+        for node in self.nodes_list:
+            node.visited_count = 0
+
     def add_victim(self, victim_type, id=None, name=None, location=None):
         """ Register a victim node to graph and append the corresponding lists
 

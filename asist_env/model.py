@@ -31,7 +31,7 @@ class DeepQNetwork(nn.Module):
 
 class Agent():
     def __init__(self, gamma, epsilon, lr, input_dims, batch_size, n_actions, max_mem_size=100000, eps_ends=0.01,
-                 eps_dec=5e-4):
+                 eps_dec=5e-4, layer_size=256):
         self.gamma = gamma
         self.epsilon = epsilon
         self.eps_min = eps_ends
@@ -42,7 +42,7 @@ class Agent():
         self.batch_size = batch_size
         self.mem_cntr = 0
 
-        self.Q_eval = DeepQNetwork(self.lr, n_actions=n_actions, input_dims=input_dims, fc1_dims=256, fc2_dims=256)
+        self.Q_eval = DeepQNetwork(self.lr, n_actions=n_actions, input_dims=input_dims, fc1_dims=layer_size, fc2_dims=layer_size)
         self.state_memory = np.zeros((self.mem_size, *input_dims), dtype=np.float32)
         self.new_state_memory = np.zeros((self.mem_size, *input_dims), dtype=np.float32)
         # what the agent wants to know for the temporal difference update rule is what is
@@ -78,7 +78,8 @@ class Agent():
             actions = self.Q_eval.forward(state)
             # action = T.argmax(actions).item()
             mask = T.from_numpy(observation[:-2]).ge(0.1).float().to(self.Q_eval.device)
-            action = T.argmax((T.min(actions).abs() + actions) * mask).item()
+            # print(mask)
+            action = T.argmax((T.min(actions).abs() + actions + 1) * mask).item()
             # print((T.min(actions).abs() + actions) * mask)
         else:
             # print(T.where(T.tensor(observation[:-3] > 0))[0])

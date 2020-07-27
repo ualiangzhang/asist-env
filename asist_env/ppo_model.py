@@ -55,8 +55,9 @@ class ActorCritic(nn.Module):
     def act(self, state, memory):
         state = torch.from_numpy(state).float().to(device)
         action_probs = self.action_layer(state)
-        mask = state[:-2].ge(0.1).float().to(device)
-        dist = Categorical(action_probs * mask)
+        # mask = state[:-2].ge(0.1).float().to(device)
+        # dist = Categorical(action_probs * mask)
+        dist = Categorical(action_probs)
         action = dist.sample()
 
         memory.states.append(state)
@@ -162,17 +163,17 @@ def main():
     ############## Hyperparameters ##############
     action_dim = state_dim - 2
     render = False
-    solved_reward = 2400         # stop training if avg_reward > solved_reward
+    solved_reward = 800000         # stop training if avg_reward > solved_reward
     log_interval = 20           # print avg reward in the interval
-    max_episodes = 5000        # max training episodes
-    max_timesteps = 1200         # max timesteps in one episode
-    n_latent_var = 256           # number of variables in hidden layer
-    update_timestep = 1024      # update policy every n timesteps
-    lr = 0.0001
+    max_episodes = 50000        # max training episodes
+    max_timesteps = 2000         # max timesteps in one episode
+    n_latent_var = 64           # number of variables in hidden layer
+    update_timestep = 2048      # update policy every n timesteps
+    lr = 3e-4
     betas = (0.9, 0.999)
     gamma = 0.99                # discount factor
-    K_epochs = 4                # update policy for K epochs
-    eps_clip = 0.2              # clip parameter for PPO
+    K_epochs = 10                # update policy for K epochs
+    eps_clip = 0.25              # clip parameter for PPO
     # random_seed = None
     #############################################
     if args.lr is not None:
@@ -202,6 +203,7 @@ def main():
 
     # training loop
     scores_list = []
+    # saved_victims_list = []
     for i_episode in range(1, max_episodes+1):
         raw_score = 0
         state = env.reset()
@@ -232,6 +234,7 @@ def main():
 
         avg_length += t
         scores_list.append(raw_score)
+        # saved_victims_list.append(len(env.graph.safe_victim_list))
 
         # stop training if avg_reward > solved_reward
         if running_reward > (log_interval*solved_reward):
@@ -244,22 +247,36 @@ def main():
             avg_length = int(avg_length/log_interval)
             running_reward = int((running_reward/log_interval))
 
-            print('Episode {} \t avg length: {} \t reward: {} \t victims_saved: {}'.format(i_episode, avg_length, running_reward, len(env.graph.safe_victim_list)))
+            print('Episode {} \t avg length: {} \t reward: {} \t victims_saved: {} \t steps: {} \t unique_node: {}'.format(i_episode, avg_length, running_reward, len(env.graph.safe_victim_list), len(env.visit_node_sequence), len(set(env.visit_node_sequence))))
             # animate_graph_training(env.visit_node_sequence, portal_data, room_data, victim_data)
             running_reward = 0
             avg_length = 0
 
 
     avg_scores = np.zeros(max_episodes)
+    # avg_saved_victim = np.zeros(max_episodes)
     for t in range(max_episodes):
-        avg_scores[t] = np.mean(scores_list[max(0, t-20):(t+1)])
+        avg_scores[t] = np.mean(scores_list[max(0, t-100):(t+1)])
+        # avg_saved_victim[t] = np.mean(saved_victims_list[max(0, t-40):(t+1)])
 
-    plt.plot(scores_list, label="raw_scores")
-    plt.plot(avg_scores, label="roll_mean_20")
+    # plt.plot(scores_list, label="raw_scores")
+    fig, ax1 = plt.subplots()
+    ax1.set_xlabel('episode')
+    ax1.set_ylabel('score')
+    ax1.plot(avg_scores, label="score_avg100", color="C0")
     plt.legend(loc="upper left")
-    plt.ylabel("score")
-    plt.xlabel("episode")
-    plt.savefig(f'ppo_clip{str(eps_clip).replace(".","")}_lr{str(lr).replace(".","")}_ut{update_timestep}_KEpoch{K_epochs}.png')
+
+    # ax2 = ax1.twinx()
+    # ax2.set_ylabel('saved_victims')
+    # ax2.plot(avg_saved_victim, label="saved", color="C1")
+
+    plt.savefig("PPO_newAction_fullMap.png")
+
+    # plt.plot(avg_scores, label="roll_mean_20")
+    # plt.legend(loc="upper left")
+    # plt.ylabel("score")
+    # plt.xlabel("episode")
+    # plt.savefig(f'ppo_clip{str(eps_clip).replace(".","")}_lr{str(lr).replace(".","")}_ut{update_timestep}_KEpoch{K_epochs}.png')
 
 if __name__ == '__main__':
     main()
