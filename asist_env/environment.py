@@ -65,6 +65,8 @@ class AsistEnvGym(gym.Env):
         self.positive_reward_multiplier = 10
         self.visit_node_sequence = []
         self.victim_data = victim_data
+        self.stop_cost = 1000
+        self.cost_bits = 6
         # Define action and observation space
         # They must be gym.spaces objects
         # Example when using discrete actions:
@@ -76,8 +78,12 @@ class AsistEnvGym(gym.Env):
         #     max_nei_length = max(max_nei_length, neighbor_length)
         # self.action_space = spaces.Discrete(max_nei_length)
 
-        self.action_space = spaces.Discrete(len(self.graph.nodes_list))
-        self.observation_space = spaces.Box(low=0, high=1, shape=(len(self.graph.nodes_list)+2,), dtype=np.int)
+        # self.action_space = spaces.Discrete(len(self.graph.nodes_list))
+        self.action_space = spaces.Discrete(8)
+        # self.observation_space = spaces.Box(low=0, high=1, shape=(len(self.graph.nodes_list)+2+self.cost_bits,), dtype=np.int)
+        # self.observation_space = spaces.Box(low=0, high=1, shape=(3*5+2+self.cost_bits,), dtype=np.int)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(7+2+2+1+2+1+3,), dtype=np.int)
+
 
     def _next_observation(self):
         room_observation = np.zeros(len(self.graph.room_list))
@@ -110,7 +116,123 @@ class AsistEnvGym(gym.Env):
             device_info = [1, 1]
 
         device_info = np.array(device_info)
-        return np.concatenate([room_observation, portal_observation, victim_observation, device_info])
+
+        time_bins = self.split(range(self.stop_cost+1), 2 ** self.cost_bits)
+        bin_idx = None
+        for idx, ran in enumerate(time_bins):
+            if min(self.total_cost, self.stop_cost) in ran:
+                bin_idx = idx
+                break
+
+        # print(bin_idx, self.total_cost)
+        bin_str = f"{bin_idx:0{self.cost_bits}b}"
+        bin_list = list(map(int, list(bin_str)))
+        # print(bin_list)
+
+        return np.concatenate([room_observation, portal_observation, victim_observation, device_info, bin_list])
+
+    def _next_observation_yunzhe_narrow(self):
+        num_room = 0
+        num_portal = 0
+        num_green_victim = 0
+        num_yellow_victim = 0
+        num_other_victim = 0
+
+        for n in self.graph.get_neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Room:
+                num_room += 1
+            if n.type == graph.NodeType.Portal:
+                num_portal += 1
+            if n.type == graph.NodeType.Victim:
+                if n.victim_type == graph.VictimType.Yellow:
+                    num_yellow_victim += 1
+                elif n.victim_type == graph.VictimType.Green:
+                    num_green_victim += 1
+                else:
+                    num_other_victim += 1
+
+        green_victim_str = f"{num_green_victim:03b}"
+        yellow_victim_str = f"{num_yellow_victim:03b}"
+        other_victim_str = f"{num_other_victim:03b}"
+        room_str = f"{num_room:03b}"
+        portal_str = f"{num_portal:03b}"
+
+        green_victim_list = list(map(int, list(green_victim_str)))
+        yellow_victim_list = list(map(int, list(yellow_victim_str)))
+        other_victim_list = list(map(int, list(other_victim_str)))
+        room_list = list(map(int, list(room_str)))
+        portal_list = list(map(int, list(portal_str)))
+
+        device_num = self.get_device_info()
+        if device_num == 0:
+            device_info = [0, 0]
+        elif device_num == 1:
+            device_info = [1, 0]
+        else:
+            device_info = [1, 1]
+
+        device_info = np.array(device_info)
+
+        time_bins = self.split(range(self.stop_cost+1), 2 ** self.cost_bits)
+        bin_idx = None
+        for idx, ran in enumerate(time_bins):
+            if min(self.total_cost, self.stop_cost) in ran:
+                bin_idx = idx
+                break
+
+        # print(bin_idx, self.total_cost)
+        bin_str = f"{bin_idx:0{self.cost_bits}b}"
+        bin_list = list(map(int, list(bin_str)))
+        # print(bin_list)
+
+        return np.concatenate([room_list, portal_list, yellow_victim_list, green_victim_list, other_victim_list, device_info, bin_list])
+
+    def _two_encoding(self, num):
+        assert isinstance(num, int) and 0 <= num <= 2
+        if num == 0:
+            return np.array([0, 0])
+        elif num == 1:
+            return np.array([1, 0])
+        else:
+            return np.array([1, 1])
+
+    def _next_observation_volkan_narrow(self):
+        curr_node_idx = self.graph.ordered_node_list.index(self.curr_pos)
+        curr_node_idx_str = f"{curr_node_idx:07b}"
+        curr_node_idx_list = np.array(list(map(int, list(curr_node_idx_str))))
+
+        num_connecting_portal = 0
+        num_green_victim = 0
+        num_yellow_victim = 0
+        has_mirroring_portal = False
+
+        for n in self.graph.get_neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Portal:
+                num_connecting_portal += 1
+                if self.curr_pos.type == graph.NodeType.Portal and self.curr_pos.is_same_portal(n):
+                    has_mirroring_portal = True
+                    num_connecting_portal -= 1
+            if n.type == graph.NodeType.Victim:
+                if n.victim_type == graph.VictimType.Yellow:
+                    num_yellow_victim += 1
+                elif n.victim_type == graph.VictimType.Green:
+                    num_green_victim += 1
+
+        connecting_portal_str = f"{num_connecting_portal:03b}"
+        connecting_portal_list = np.array(list(map(int, list(connecting_portal_str))))
+
+        device_num = self.get_device_info()
+        device_info = self._two_encoding(device_num)
+        green_victim_list = self._two_encoding(num_green_victim)
+        yellow_victim_list = self._two_encoding(num_yellow_victim)
+
+        mirroring_portal_slot = np.array([1]) if has_mirroring_portal else np.array([0])
+
+        time_slot = np.array([min(self.total_cost, self.stop_cost) / self.stop_cost])
+
+        return np.concatenate([curr_node_idx_list, yellow_victim_list, green_victim_list, mirroring_portal_slot, device_info, time_slot, connecting_portal_list])
+
+
 
     def _node_observation_debug(self):
         room_observation = [(0, node.id) for node in self.graph.room_list]
@@ -146,11 +268,40 @@ class AsistEnvGym(gym.Env):
                 return 1
         return 0
 
+    def split(self, a, n):
+        k, m = divmod(len(a), n)
+        return (a[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
+
+
     def step(self, action):
         # action_node = self.graph.ordered_node_list[action]
-        neighbors = [n for n in self.graph.neighbors(self.curr_pos)]
-        num_of_bins = len(self.graph.ordered_node_list) // len(neighbors)
-        action_node = neighbors[min(action // num_of_bins, len(neighbors)-1)]
+        # neighbors = [n for n in self.graph.neighbors(self.curr_pos)]
+
+        # Room, Victim, Portals
+        neighbor_room = []
+        neighbor_victim = []
+        neighbor_portal = []
+        for n in self.graph.neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Room:
+                neighbor_room.append(n)
+            elif n.type == graph.NodeType.Victim:
+                neighbor_victim.append(n)
+            elif n.type == graph.NodeType.Portal:
+                neighbor_portal.append(n)
+
+        neighbors = neighbor_room + neighbor_victim + neighbor_portal
+        range_list = self.split(range(self.action_space.n), len(neighbors))
+
+        action_node = None
+        for idx, ran in enumerate(range_list):
+            if action in ran:
+                # print(idx, action, len(neighbors), range_list)
+                action_node = neighbors[idx]
+                break
+
+
+        # num_of_bins = len(self.graph.ordered_node_list) // len(neighbors)
+        # action_node = neighbors[min(action // num_of_bins, len(neighbors)-1)]
 
         # print(action, action_node.id)
         # print(str([(0, n.id) for n in self.graph.ordered_node_list]))
@@ -191,11 +342,13 @@ class AsistEnvGym(gym.Env):
                 self.score += triage_score
                 reward += triage_score * self.positive_reward_multiplier
 
-        if self.graph.no_more_victims() or self.total_cost > 800:
+        if self.graph.no_more_victims() or self.total_cost > self.stop_cost:
             extra_reward = sum(10 if n.visited_count > 0 else 0 for n in self.graph.ordered_node_list )
             # all_nodes = [n.visited_count for n in self.graph.ordered_node_list]
             reward += extra_reward
             # print(extra_reward)
+            # steps = len(self.visit_node_sequence)
+            # reward -= steps * 5
 
             if self.graph.no_more_victims():
                 reward += 100
@@ -203,7 +356,86 @@ class AsistEnvGym(gym.Env):
             done = True
 
         # return self._next_observation(), reward, done, {"node_debug": self._node_observation_debug()}
-        return self._next_observation(), reward, done, {}
+        return self._next_observation_volkan_narrow(), reward, done, {}
+
+    def step_volkan(self, action):
+        yellow_victim = None
+        green_victim = None
+        yellow_dist = 999
+        green_dist = 999
+        mirror_portal = None
+        connecting_portals = list()
+
+        for n in self.graph.neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Victim:
+                if n.victim_type == graph.VictimType.Yellow:
+                    if self.graph.get_edge_cost(self.curr_pos, n) < yellow_dist:
+                        yellow_victim = n
+                        yellow_dist = self.graph.get_edge_cost(self.curr_pos, n)
+                if n.victim_type == graph.VictimType.Green:
+                    if self.graph.get_edge_cost(self.curr_pos, n) < green_dist:
+                        green_victim = n
+                        green_dist = self.graph.get_edge_cost(self.curr_pos, n)
+            if n.type == graph.NodeType.Portal:
+                if self.curr_pos.type == graph.NodeType.Portal and self.curr_pos.is_same_portal(n):
+                    assert mirror_portal is None
+                    mirror_portal = n
+                else:
+                    connecting_portals.append(n)
+
+        reward = 0
+        done = False
+        action_node = None
+
+        if action == 0:
+            action_node = yellow_victim
+        elif action == 1:
+            action_node = green_victim
+        elif action == 3:
+            action_node = mirror_portal
+        else:
+            if len(connecting_portals) != 0:
+                range_list = self.split(range(6), len(connecting_portals))
+                for idx, ran in enumerate(range_list):
+                    if action-3 in ran:
+                        # print(idx, action, len(neighbors), range_list)
+                        action_node = connecting_portals[idx]
+                        break
+
+        if action_node is None:
+            reward -= 10
+        else:
+            self.visit_node_sequence.append(action_node.id)
+            edge_cost = self.graph.get_edge_cost(self.curr_pos, action_node)
+            self.prev_pos = self.curr_pos
+            self.curr_pos = action_node
+
+            action_node.visited_count += 1
+
+            reward -= edge_cost
+            self.total_cost += edge_cost
+            if action_node.type == graph.NodeType.Victim:
+                triage_cost, triage_score = self.graph.triage(action_node)
+                reward -= triage_cost
+                self.total_cost += triage_cost
+                self.score += triage_score
+                reward += triage_score * self.positive_reward_multiplier
+
+        if self.graph.no_more_victims() or self.total_cost > self.stop_cost:
+            extra_reward = sum(10 if n.visited_count > 0 else 0 for n in self.graph.ordered_node_list )
+            # all_nodes = [n.visited_count for n in self.graph.ordered_node_list]
+            reward += extra_reward
+            # print(extra_reward)
+            # steps = len(self.visit_node_sequence)
+            # reward -= steps * 5
+
+            if self.graph.no_more_victims():
+                reward += 100
+
+            done = True
+
+        # return self._next_observation(), reward, done, {"node_debug": self._node_observation_debug()}
+        return self._next_observation_volkan_narrow(), reward, done, {}
 
 
     def reset(self):
@@ -216,11 +448,12 @@ class AsistEnvGym(gym.Env):
         self.prev_pos = None
         self.visit_node_sequence.clear()
         # return self.get_observation()
-        return self._next_observation()
+        return self._next_observation_volkan_narrow()
 
     def render(self, mode='human', close=False):
         # Render the environment to the screen
         pass
+
 
 class AsistEnv:
     def __init__(self, portal_data, room_data, victim_data, start_node_id):
