@@ -1,0 +1,7 @@
+README.md
+setup.py
+AsistEnv_v0.egg-info/PKG-INFO
+AsistEnv_v0.egg-info/SOURCES.txt
+AsistEnv_v0.egg-info/dependency_links.txt
+AsistEnv_v0.egg-info/requires.txt
+AsistEnv_v0.egg-info/top_level.txt

@@ -11,17 +11,18 @@ import itertools
 from visualizer import  animate_graph_training
 
 if __name__ == '__main__':
-    data_folder = Path("data")
+    # data_folder = Path("data")
 
-    portals_csv = data_folder / "sparky_portals_reduced.csv"
-    rooms_csv = data_folder / "sparky_rooms_reduced.csv"
-    victims_csv = data_folder / "sparky_victims_reduced.csv"
+    # portals_csv = data_folder / "sparky_portals_reduced.csv"
+    # rooms_csv = data_folder / "sparky_rooms_reduced.csv"
+    # victims_csv = data_folder / "sparky_victims_reduced.csv"
 
-    portal_data = pd.read_csv(portals_csv)
-    room_data = pd.read_csv(rooms_csv)
-    victim_data = pd.read_csv(victims_csv)
+    # portal_data = pd.read_csv(portals_csv)
+    # room_data = pd.read_csv(rooms_csv)
+    # victim_data = pd.read_csv(victims_csv)
 
-    env = AsistEnvGym(portal_data, room_data, victim_data, "as")
+    # env = AsistEnvGym(portal_data, room_data, victim_data, "as")
+    env = AsistEnvGym()
 
     num_of_state = len(env._next_observation())
 
