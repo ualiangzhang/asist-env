@@ -54,7 +54,11 @@ class AsistEnvRandGen:
 class AsistEnvGym(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
-
+    """
+    NOTE: Temporarily removed init parameters `portal_data`, `room_data`, `victim_data`
+    and `start_node_id` and instead set them manually in init function. This allows
+    the AsistEnvGym class to be usable in the Shiva project.
+    """
     def __init__(self):
         super(AsistEnvGym, self).__init__()
         self.graph = self._parse_map_data()
@@ -284,6 +288,7 @@ class AsistEnvGym(gym.Env):
         return (a[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
 
 
+    # NOTE: Was called "step()" previously
     def step_old(self, action):
         # action_node = self.graph.ordered_node_list[action]
         # neighbors = [n for n in self.graph.neighbors(self.curr_pos)]
