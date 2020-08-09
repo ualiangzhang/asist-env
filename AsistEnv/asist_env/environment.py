@@ -1,4 +1,4 @@
-import graph
+from . import graph
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -50,21 +50,22 @@ class AsistEnvRandGen:
     def __init__(self):
         pass
 
+
 class AsistEnvGym(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, portal_data, room_data, victim_data, start_node_id):
+    def __init__(self):
         super(AsistEnvGym, self).__init__()
-        self.graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
-        self.start_node_id = start_node_id
-        self.curr_pos = self.graph[start_node_id]
+        self.graph = self._parse_map_data()
+        self.start_node_id = "as"
+        self.curr_pos = self.graph[self.start_node_id]
         self.prev_pos = None
         self.total_cost = 0
         self.score = 0
         self.positive_reward_multiplier = 10
         self.visit_node_sequence = []
-        self.victim_data = victim_data
+        # self.victim_data = victim_data
         self.stop_cost = 1000
         self.cost_bits = 6
         # Define action and observation space
@@ -84,6 +85,16 @@ class AsistEnvGym(gym.Env):
         # self.observation_space = spaces.Box(low=0, high=1, shape=(3*5+2+self.cost_bits,), dtype=np.int)
         self.observation_space = spaces.Box(low=0, high=1, shape=(7+2+2+1+2+1+3,), dtype=np.int)
 
+    def _parse_map_data(self):
+        data_folder = Path(graph.__file__[:-18] + "/data")
+        portals_csv = data_folder / "sparky_portals_reduced.csv"
+        rooms_csv = data_folder / "sparky_rooms_reduced.csv"
+        victims_csv = data_folder / "sparky_victims_reduced.csv"
+
+        portal_data = pd.read_csv(portals_csv)
+        room_data = pd.read_csv(rooms_csv)
+        victim_data = pd.read_csv(victims_csv)
+        return MapParser.parse_map_data(portal_data, room_data, victim_data)
 
     def _next_observation(self):
         room_observation = np.zeros(len(self.graph.room_list))
@@ -273,7 +284,7 @@ class AsistEnvGym(gym.Env):
         return (a[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
 
 
-    def step(self, action):
+    def step_old(self, action):
         # action_node = self.graph.ordered_node_list[action]
         # neighbors = [n for n in self.graph.neighbors(self.curr_pos)]
 
@@ -358,7 +369,8 @@ class AsistEnvGym(gym.Env):
         # return self._next_observation(), reward, done, {"node_debug": self._node_observation_debug()}
         return self._next_observation_volkan_narrow(), reward, done, {}
 
-    def step_volkan(self, action):
+    # NOTE: Was called "step_volkan()" previously
+    def step(self, action):
         yellow_victim = None
         green_victim = None
         yellow_dist = 999
@@ -568,6 +580,7 @@ class AsistEnv:
             done = True
         return self.get_unorganized_observation_simplified(), reward, done
 
+    # NOTE: Was called "step()" previously
     def step_old(self, action):
         """ The global view
         :param performance: 0: navigate, 1: enter, 2: triage
