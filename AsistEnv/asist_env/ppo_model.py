@@ -220,7 +220,7 @@ def main():
 
     for i_episode in range(1, max_episodes+1):
         raw_score = 0
-        state = env.reset_victims()
+        state = env.reset()
         # state = env.reset()
         # plot_graph(env.graph, pop_out=True)
         # visited_freq['as'] += 1
