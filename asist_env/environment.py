@@ -46,6 +46,27 @@ class MapParser:
 
         return g
 
+    @classmethod
+    def no_victim_map(cls, portal_data, room_data):
+        """ Given Map Data, construct a Graph
+        :param portal_data: pandas data-frame for portal_data
+        :param room_data: pandas data-frame for room_data
+        :param victim_data: pandas data-frame for victim_data
+        :return: the graph
+        """
+        g = graph.Graph()
+        for index, row in room_data.iterrows():
+            g.add_room(id=row["id"], location=eval(row["loc"]))
+
+        for index, row in portal_data.iterrows():
+            # is_open = row['isOpen'] == "TRUE"
+            # g.add_portal(tuple(eval(row["connections"])), is_open, id=row["id"], location=eval(row["loc"]))
+            g.add_portal(tuple(eval(row["connections"])), id=row["id"], location=eval(row["loc"]))
+
+        g.make_ordered_node_list()
+
+        return g
+
 class AsistEnvRandGen:
     def __init__(self):
         pass
@@ -54,19 +75,25 @@ class AsistEnvGym(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, portal_data, room_data, victim_data, start_node_id):
+    def __init__(self, portal_data, room_data, victim_data, start_node_id, random_victim=False):
         super(AsistEnvGym, self).__init__()
-        self.graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
+        if random_victim:
+            self.graph = MapParser.no_victim_map(portal_data, room_data)
+        else:
+            self.graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
         self.start_node_id = start_node_id
         self.curr_pos = self.graph[start_node_id]
         self.prev_pos = None
         self.total_cost = 0
         self.score = 0
         self.positive_reward_multiplier = 10
+        self.edge_cost_multiplier = 8
         self.visit_node_sequence = []
         self.victim_data = victim_data
-        self.stop_cost = 1000
+        self.stop_cost = 600
+        self.yellow_decease_cost = 300
         self.cost_bits = 6
+        self.agent_speed = [1, 4.3, 5.6][2]
         # Define action and observation space
         # They must be gym.spaces objects
         # Example when using discrete actions:
@@ -79,13 +106,13 @@ class AsistEnvGym(gym.Env):
         # self.action_space = spaces.Discrete(max_nei_length)
 
         # self.action_space = spaces.Discrete(len(self.graph.nodes_list))
-        self.action_space = spaces.Discrete(8)
+        self.action_space = spaces.Discrete(1+1+1+6)
         # self.observation_space = spaces.Box(low=0, high=1, shape=(len(self.graph.nodes_list)+2+self.cost_bits,), dtype=np.int)
         # self.observation_space = spaces.Box(low=0, high=1, shape=(3*5+2+self.cost_bits,), dtype=np.int)
-        self.observation_space = spaces.Box(low=0, high=1, shape=(7+2+2+1+2+1+3,), dtype=np.int)
+        # self.observation_space = spaces.Box(low=0, high=1, shape=(7+2+2+1+2+1+3,), dtype=np.int)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(7+2+2+1+1+3,), dtype=np.int)
 
-
-    def _next_observation(self):
+    def _next_observation_old(self):
         room_observation = np.zeros(len(self.graph.room_list))
         portal_observation = np.zeros(len(self.graph.portal_list) * 2)
         victim_observation = np.zeros(len(self.graph.victim_list))
@@ -196,8 +223,9 @@ class AsistEnvGym(gym.Env):
         else:
             return np.array([1, 1])
 
-    def _next_observation_volkan_narrow(self):
-        curr_node_idx = self.graph.ordered_node_list.index(self.curr_pos)
+    def _next_observation(self):
+        # curr_node_idx = self.graph.ordered_node_list.index(self.curr_pos)
+        curr_node_idx = self.graph.nodes_list.index(self.curr_pos)
         curr_node_idx_str = f"{curr_node_idx:07b}"
         curr_node_idx_list = np.array(list(map(int, list(curr_node_idx_str))))
 
@@ -230,9 +258,8 @@ class AsistEnvGym(gym.Env):
 
         time_slot = np.array([min(self.total_cost, self.stop_cost) / self.stop_cost])
 
-        return np.concatenate([curr_node_idx_list, yellow_victim_list, green_victim_list, mirroring_portal_slot, device_info, time_slot, connecting_portal_list])
-
-
+        # return np.concatenate([curr_node_idx_list, yellow_victim_list, green_victim_list, mirroring_portal_slot, device_info, time_slot, connecting_portal_list])
+        return np.concatenate([curr_node_idx_list, yellow_victim_list, green_victim_list, mirroring_portal_slot, time_slot, connecting_portal_list])
 
     def _node_observation_debug(self):
         room_observation = [(0, node.id) for node in self.graph.room_list]
@@ -273,7 +300,7 @@ class AsistEnvGym(gym.Env):
         return (a[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
 
 
-    def step(self, action):
+    def step_old(self, action):
         # action_node = self.graph.ordered_node_list[action]
         # neighbors = [n for n in self.graph.neighbors(self.curr_pos)]
 
@@ -356,9 +383,9 @@ class AsistEnvGym(gym.Env):
             done = True
 
         # return self._next_observation(), reward, done, {"node_debug": self._node_observation_debug()}
-        return self._next_observation_volkan_narrow(), reward, done, {}
+        return self._next_observation(), reward, done, {}
 
-    def step_volkan(self, action):
+    def step(self, action):
         yellow_victim = None
         green_victim = None
         yellow_dist = 999
@@ -391,7 +418,7 @@ class AsistEnvGym(gym.Env):
             action_node = yellow_victim
         elif action == 1:
             action_node = green_victim
-        elif action == 3:
+        elif action == 2:
             action_node = mirror_portal
         else:
             if len(connecting_portals) != 0:
@@ -406,13 +433,14 @@ class AsistEnvGym(gym.Env):
             reward -= 10
         else:
             self.visit_node_sequence.append(action_node.id)
-            edge_cost = self.graph.get_edge_cost(self.curr_pos, action_node)
+            edge_dist = self.graph.get_edge_cost(self.curr_pos, action_node)
+            edge_cost = edge_dist / self.agent_speed
             self.prev_pos = self.curr_pos
             self.curr_pos = action_node
 
             action_node.visited_count += 1
 
-            reward -= edge_cost
+            reward -= edge_cost * self.edge_cost_multiplier
             self.total_cost += edge_cost
             if action_node.type == graph.NodeType.Victim:
                 triage_cost, triage_score = self.graph.triage(action_node)
@@ -420,6 +448,99 @@ class AsistEnvGym(gym.Env):
                 self.total_cost += triage_cost
                 self.score += triage_score
                 reward += triage_score * self.positive_reward_multiplier
+
+                # if action_node.type == graph.VictimType.Yellow and self.total_cost < self.yellow_decease_cost:
+                #     reward += 100
+
+            # if action_node.visited_count == 1:
+            #     reward += 100
+
+            
+        if self.graph.no_more_victims() or self.total_cost > self.stop_cost:
+        # if self.total_cost > self.stop_cost:
+            extra_reward = sum(10 if n.visited_count > 0 else 0 for n in self.graph.ordered_node_list )
+            # all_nodes = [n.visited_count for n in self.graph.ordered_node_list]
+            reward += extra_reward
+            # print(extra_reward)
+            # steps = len(self.visit_node_sequence)
+            # reward -= steps * 5
+
+            if self.graph.no_more_victims():
+                reward += 100
+
+            done = True
+
+        # return self._next_observation(), reward, done, {"node_debug": self._node_observation_debug()}
+        return self._next_observation(), reward, done, {}
+
+    def step_two_portal(self, action):
+        yellow_victim = None
+        green_victim = None
+        yellow_dist = 999
+        green_dist = 999
+        mirror_portal = None
+        connecting_portals = list()
+
+        for n in self.graph.neighbors(self.curr_pos):
+            if n.type == graph.NodeType.Victim:
+                if n.victim_type == graph.VictimType.Yellow:
+                    if self.graph.get_edge_cost(self.curr_pos, n) < yellow_dist:
+                        yellow_victim = n
+                        yellow_dist = self.graph.get_edge_cost(self.curr_pos, n)
+                if n.victim_type == graph.VictimType.Green:
+                    if self.graph.get_edge_cost(self.curr_pos, n) < green_dist:
+                        green_victim = n
+                        green_dist = self.graph.get_edge_cost(self.curr_pos, n)
+            if n.type == graph.NodeType.Portal:
+                if self.curr_pos.type == graph.NodeType.Portal and self.curr_pos.is_same_portal(n):
+                    assert mirror_portal is None
+                    mirror_portal = n
+                else:
+                    connecting_portals.append(n)
+
+        sorted_connecting_portals = sorted(connecting_portals, key=lambda n: self.graph.get_edge_cost(self.curr_pos, n))
+
+        two_portals = sorted_connecting_portals[:2]
+        # if len(two_portals) == 2:
+        #     print(self.graph.get_edge_cost(self.curr_pos, two_portals[0]), self.graph.get_edge_cost(self.curr_pos, two_portals[1]))
+
+        reward = 0
+        done = False
+        action_node = None
+
+        if action == 0:
+            action_node = yellow_victim
+        elif action == 1:
+            action_node = green_victim
+        elif action == 2:
+            action_node = mirror_portal
+        elif action == 3 and len(two_portals) >= 1:
+            action_node = two_portals[0]
+        elif action == 4 and len(two_portals) == 2:
+            action_node = two_portals[1]
+
+        if action_node is None:
+            reward -= 10
+        else:
+            self.visit_node_sequence.append(action_node.id)
+            edge_dist = self.graph.get_edge_cost(self.curr_pos, action_node)
+            edge_cost = edge_dist / self.agent_speed
+            self.prev_pos = self.curr_pos
+            self.curr_pos = action_node
+
+            action_node.visited_count += 1
+
+            reward -= edge_cost * self.edge_cost_multiplier
+            self.total_cost += edge_cost
+            if action_node.type == graph.NodeType.Victim:
+                triage_cost, triage_score = self.graph.triage(action_node)
+                reward -= triage_cost
+                self.total_cost += triage_cost
+                self.score += triage_score
+                reward += triage_score * self.positive_reward_multiplier
+
+                if action_node.type == graph.VictimType.Yellow and self.total_cost < self.yellow_decease_cost:
+                    reward += 100
 
         if self.graph.no_more_victims() or self.total_cost > self.stop_cost:
             extra_reward = sum(10 if n.visited_count > 0 else 0 for n in self.graph.ordered_node_list )
@@ -435,7 +556,7 @@ class AsistEnvGym(gym.Env):
             done = True
 
         # return self._next_observation(), reward, done, {"node_debug": self._node_observation_debug()}
-        return self._next_observation_volkan_narrow(), reward, done, {}
+        return self._next_observation(), reward, done, {}
 
 
     def reset(self):
@@ -448,7 +569,21 @@ class AsistEnvGym(gym.Env):
         self.prev_pos = None
         self.visit_node_sequence.clear()
         # return self.get_observation()
-        return self._next_observation_volkan_narrow()
+        return self._next_observation()
+
+    def reset_victims(self):
+        # Reset the state of the environment to an initial state
+        self.curr_pos = self.graph[self.start_node_id]
+        self.graph.remove_all_victims()
+        no_victim_rooms = {"achl", "alha", "alhb", "ach", "arha", "arhb", "as"}
+        self.graph = graph.RandomGraphGenerator.add_random_victims(self.graph, no_victim_rooms)
+        # self.graph = self.graph_copy.copy()
+        self.total_cost = 0
+        self.score = 0
+        self.prev_pos = None
+        self.visit_node_sequence.clear()
+        # return self.get_observation()
+        return self._next_observation()
 
     def render(self, mode='human', close=False):
         # Render the environment to the screen

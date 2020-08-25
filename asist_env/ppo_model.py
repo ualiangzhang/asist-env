@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 # from visualizer import animate_graph_training
+from visualizer import plot_graph
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -146,10 +147,10 @@ def main():
     room_data = pd.read_csv(rooms_csv)
     victim_data = pd.read_csv(victims_csv)
 
-    env = AsistEnvGym(portal_data, room_data, victim_data, "as")
-
+    env = AsistEnvGym(portal_data, room_data, victim_data, "as", random_victim=False)
     # state_dim = len(env._next_observation())
-    state_dim = 7+2+2+1+2+1+3
+    # state_dim = 7+2+2+1+2+1+3
+    state_dim = 7+2+2+1+1+3
 
     ############## parsing parameter ##############
     parser = argparse.ArgumentParser(description='hyper parameters for PPO')
@@ -167,16 +168,17 @@ def main():
     render = False
     solved_reward = 800000         # stop training if avg_reward > solved_reward
     log_interval = 20           # print avg reward in the interval
-    max_episodes = 100000        # max training episodes
-    max_timesteps = 2000         # max timesteps in one episode
-    n_latent_var = 128           # number of variables in hidden layer
-    update_timestep = 2048      # update policy every n timesteps
+    max_episodes = 20        # max training episodes
+    max_timesteps = 20000         # max timesteps in one episode
+    n_latent_var = 32           # number of variables in hidden layer
+    update_timestep = 1024      # update policy every n timesteps
     lr = 3e-4
     betas = (0.9, 0.999)
     gamma = 0.99                # discount factor
     K_epochs = 10                # update policy for K epochs
     eps_clip = 0.2              # clip parameter for PPO
     # random_seed = None
+
     #############################################
     if args.lr is not None:
         lr = args.lr
@@ -196,7 +198,7 @@ def main():
 
     memory = Memory()
     ppo = PPO(state_dim, action_dim, n_latent_var, lr, betas, gamma, K_epochs, eps_clip)
-    print(lr,betas)
+    print(f"episode={max_episodes}, lr={lr}, ls={n_latent_var}, ut={update_timestep}, ke={K_epochs}, clip={eps_clip}")
 
     # logging variables
     running_reward = 0
@@ -218,14 +220,16 @@ def main():
 
     for i_episode in range(1, max_episodes+1):
         raw_score = 0
-        state = env.reset()
+        state = env.reset_victims()
+        # state = env.reset()
+        # plot_graph(env.graph, pop_out=True)
         # visited_freq['as'] += 1
         for t in range(max_timesteps):
             timestep += 1
 
             # Running policy_old:
             action = ppo.policy_old.act(state, memory)
-            state, reward, done, info = env.step_volkan(action)
+            state, reward, done, info = env.step(action)
             nodes_set.add(env.curr_pos.id)
             # visited_freq[env.curr_pos.id] += 1
 
@@ -264,24 +268,32 @@ def main():
 
 
         # logging
-        if i_episode % log_interval == 0:
+        if i_episode % log_interval == 0 or max_reward == raw_score:
             # avg_length = int(avg_length/log_interval)
             running_reward = int((running_reward/log_interval))
 
-            print('Episode {:<6} avg_reward: {:<5} reward: {:<5} max_reward: {:<5} victims_saved: {:<2} max_victim_saved: {:<2} steps: {:<3} unique_node: {:>3}/123 all_nodes: {:>3}/123'.format(i_episode, running_reward, raw_score, max_reward, len(env.graph.safe_victim_list), max_victim_saved, len(env.visit_node_sequence), len(set(env.visit_node_sequence)), len(nodes_set)))
+            print('Episode {:<6} avg_reward: {:<5.0f} reward: {:<5.0f} max_reward: {:<5.0f} victims_saved: {:<2} max_victim_saved: {:<2} steps: {:<3} total_cost: {:<4.0f} unique_node: {:>3}/123 all_nodes: {:>3}/123'.format(i_episode, running_reward, raw_score, max_reward, len(env.graph.safe_victim_list), max_victim_saved, len(env.visit_node_sequence), env.total_cost, len(set(env.visit_node_sequence)), len(nodes_set)))
             # animate_graph_training(env.visit_node_sequence, portal_data, room_data, victim_data)
             running_reward = 0
             avg_length = 0
 
         num_of_saved = len(env.graph.safe_victim_list)
-        if num_of_saved >= 22:
+        if num_of_saved >= 20:
             if num_of_saved in good_path_dict:
                 if len(env.visit_node_sequence) < len(good_path_dict[num_of_saved]):
                     good_path_dict[num_of_saved] = env.visit_node_sequence.copy()
             else:
                 good_path_dict[num_of_saved] = env.visit_node_sequence.copy()
 
-
+    # env_run = AsistEnvGym(portal_data, room_data, victim_data, "as")
+    # after_path_list = list()
+    # for i in range(10):
+    #     state = env.reset()
+    #     done = False
+    #     while not done:
+    #         action = ppo.policy_old.act(state, memory)
+    #         state, reward, done, info = env_run.step(action)
+    #     after_path_list.append(env_run.visit_node_sequence.copy())
 
     avg_scores = np.zeros(max_episodes)
     # avg_saved_victim = np.zeros(max_episodes)
@@ -292,11 +304,14 @@ def main():
     # with open("graphdata_ppo.txt", 'w') as gd:
     #     gd.write(str(list(avg_scores)))
 
-    with open(f"volkan_obs_act_ls{n_latent_var}.txt", 'w') as gd:
-        gd.write(str(good_path_dict))
+    # with open(f"volkan_room_exploration_realtime_hastriagetimecost_reward_ls{n_latent_var}_ut{update_timestep}_clip{eps_clip}_50000_2000.txt", 'w') as gd:
+    #    gd.write(str(good_path_dict))
+
+    # with open("volkan_random_victim.txt", 'w') as gd:
+    #     gd.write(str(after_path_list))
 
     # print(visited_freq)
-    print(f"this run volkan observation space, volakn action space, layer size {n_latent_var}")
+    print(f"room exploration only, realtime reward, has triage time cost")
     # plt.plot(scores_list, label="raw_scores")
     # fig, ax1 = plt.subplots()
     # ax1.set_xlabel('episode')
@@ -310,11 +325,11 @@ def main():
 
     # plt.savefig("PPO_newAction_fullMap.png")
 
-    plt.plot(avg_scores, label="roll_mean_200")
-    plt.legend(loc="upper left")
-    plt.ylabel("score")
-    plt.xlabel("episode")
-    plt.savefig(f"volkan_obs_act_ls{n_latent_var}")
+    #plt.plot(avg_scores, label="roll_mean_200")
+    #plt.legend(loc="upper left")
+    #plt.ylabel("score")
+    #plt.xlabel("episode")
+    #plt.savefig(f"random_victim_distribution.png")
     # plt.savefig(f'ppo_clip{str(eps_clip).replace(".","")}_lr{str(lr).replace(".","")}_ut{update_timestep}_KEpoch{K_epochs}.png')
 
 if __name__ == '__main__':

@@ -100,13 +100,13 @@ class RoomNode(Node):
         super().__init__(id, name)
         self.type = NodeType.Room
         self.loc = location
-        self.victim_list = victims
+        self.victim_list = victims if victims is not None else []
         self.light_on = False
 
     def add_victim(self, victim_id):
         assert isinstance(victim_id, str) or isinstance(victim_id, list) and \
                all(isinstance(v, str) for v in victim_id)
-        self.victim_list += victim_id
+        self.victim_list.append(victim_id)
 
     def turn_light_on(self):
         self.light_on = True

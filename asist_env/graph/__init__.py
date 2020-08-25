@@ -50,6 +50,10 @@ class Graph(nx.Graph):
         for n in self.victim_list:
             self.ordered_node_list.append(n)
 
+    def add_victim_to_ordered_node_list(self):
+        for n in self.victim_list:
+            self.ordered_node_list.append(n)
+
     def reset(self):
         for vn in self.victim_list:
             vn.victim_type = vn.victim_type_original
@@ -139,7 +143,7 @@ class Graph(nx.Graph):
         return node_1, node_2
 
 
-    def add_room(self, id=None, name=None, location=None, victims=[]):
+    def add_room(self, id=None, name=None, location=None, victims=None):
         """ Add Room Node
         :param id: the room id, if id not give, the method will auto generate one
         :param name: name of the room, if any
@@ -283,12 +287,12 @@ class Graph(nx.Graph):
         assert isinstance(victim, VictimNode)
         if victim.victim_type == VictimType.Safe or victim.victim_type == VictimType.Dead:
             return 0, 0
-        # TODO: Need to discuss cost and reward here
+        # return cost, reward
         elif victim.victim_type == VictimType.Green:
             self.green_victim_list.remove(victim)
             victim.victim_type = VictimType.Safe
             self.safe_victim_list.append(victim)
-            return 7, 10
+            return 7.5, 10
         else: # A Yellow Victim
             self.yellow_victim_list.remove(victim)
             victim.victim_type = VictimType.Safe
@@ -299,6 +303,19 @@ class Graph(nx.Graph):
         if len(self.yellow_victim_list) == 0 and len(self.green_victim_list) == 0:
             return True
         return False
+
+    def remove_all_victims(self):
+        for node in self.victim_list:
+            self.remove_node(node)
+            self.nodes_list.remove(node)
+            self.ordered_node_list.remove(node)
+        self.victim_list.clear()
+        self.yellow_victim_list.clear()
+        self.green_victim_list.clear()
+        self.safe_victim_list.clear()
+        self.dead_victim_list.clear()
+        for node in self.room_list:
+            node.victim_list.clear()
 
     def kill_all_yellow_victims(self):
         # kill all yellow victims by turning them VictimType.Dead
@@ -452,7 +469,62 @@ class Graph(nx.Graph):
         new_z = pos1[1] + ratio * (pos2[1] - pos1[1])
         return new_x, new_z
 
-class RandomGraphGenerator():
+class RandomGraphGenerator:
+    @staticmethod
+    def circle_location(radius, loc):
+        x, y = loc[0], loc[1]
+        alpha = 2 * math.pi * random.random()
+        new_x = radius * math.cos(alpha) + x
+        new_y = radius * math.sin(alpha) + y
+        return new_x, new_y
+
+    @classmethod
+    def add_random_victims(cls, G, no_victim_rooms, total_green=19, total_yellow=7, room_num_limit=2, rand_distance=5):
+        assert isinstance(G, Graph)
+
+        room_green_count = dict()
+        room_yellow_count = dict()
+        for r in G.room_list:
+            if r.id not in no_victim_rooms:
+                room_green_count[r.id] = 0
+                room_yellow_count[r.id] = 0
+        for i in range(total_green):
+            room = random.choice(list(room_green_count.keys()))
+            while room_green_count[room] == room_num_limit:
+                room = random.choice(list(room_green_count.keys()))
+            room_green_count[room] += 1
+        for i in range(total_yellow):
+            room = random.choice(list(room_yellow_count.keys()))
+            while room_yellow_count[room] == room_num_limit:
+                room = random.choice(list(room_yellow_count.keys()))
+            room_yellow_count[room] += 1
+
+        for green_room in room_green_count:
+            for num_in_room in range(room_green_count[green_room]):
+                random_distance = random.randint(1, rand_distance)
+                green_victim = G.add_victim(VictimType.Green, location=RandomGraphGenerator.circle_location(random_distance, G[green_room].loc))
+                G[green_room].add_victim(green_victim.id)
+
+        for yellow_room in room_yellow_count:
+            for num_in_room in range(room_yellow_count[yellow_room]):
+                random_distance = random.randint(1, rand_distance)
+                yellow_victim = G.add_victim(VictimType.Yellow, location=RandomGraphGenerator.circle_location(random_distance, G[yellow_room].loc))
+                G[yellow_room].add_victim(yellow_victim.id)
+
+        for room in G.room_list:
+            G.link_victims_in_room(room, room.victim_list)
+
+        for portal_pair in G.portal_list:
+            G.connect_portal_to_rooms(portal_pair)
+
+        for portal_pair in G.portal_list:
+            G.connected_portals_to_portals(portal_pair)
+
+        G.add_victim_to_ordered_node_list()
+
+        return G
+
+
     @classmethod
     def generate_random_graph(cls, num_of_rooms, edge_weight_range, green_range, yellow_range,
                               portal_state="random", open_ratio=0.5, light_state="random"):
