@@ -1,5 +1,5 @@
 import networkx as nx
-from graph.Nodes import *
+from .Nodes import *
 from collections.abc import Iterable
 import math
 import numpy as np
