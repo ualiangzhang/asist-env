@@ -1,0 +1,7 @@
+### Required Packages ###
+
+numpy
+pandas
+networkx
+gym
+torch
