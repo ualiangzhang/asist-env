@@ -316,6 +316,8 @@ class Graph(nx.Graph):
         self.dead_victim_list.clear()
         for node in self.room_list:
             node.victim_list.clear()
+        for node in self.nodes_list:
+            node.visited_count = 0
 
     def kill_all_yellow_victims(self):
         # kill all yellow victims by turning them VictimType.Dead

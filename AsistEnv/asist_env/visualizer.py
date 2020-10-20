@@ -6,6 +6,8 @@ from pathlib import Path
 import networkx as nx
 from graph import RandomGraphGenerator
 from graph.Nodes import NodeType
+from environment import AsistEnvGym
+import json
 
 # pos = nx.spring_layout(graph, k=0.9, iterations=3, pos=pos, fixed=fix, weight=3)
 
@@ -13,14 +15,15 @@ def plot_graph(graph, save=None, pop_out=False):
     if pop_out:
         matplotlib.use("TkAgg")
     # Get position
-    pos, fix = graph.better_layout(expand_iteration=0)
+    pos, fix = graph.better_layout(expand_iteration=3)
     pos = graph.flip_z(pos)
     pos = graph.clockwise90(pos)
     weight_labels = nx.get_edge_attributes(graph,'weight')
-    plt.figure(figsize=(15,15))
+    plt.figure(figsize=(18,27))
     color_map = graph.better_color()
-    nx.draw(graph, pos, with_labels=True, node_color=color_map, edge_labels=weight_labels)
-    nx.draw_networkx_edge_labels(graph, pos, edge_labels=weight_labels)
+
+    nx.draw_networkx(graph, pos, with_labels=True, node_color=color_map)
+    # nx.draw_networkx_edge_labels(graph, pos, edge_labels=weight_labels)
 
     if save is None:
         plt.show()
@@ -104,7 +107,7 @@ def animate_graph_training(animation_sequence, portal_data, room_data, victim_da
     if not with_save:
         plt.show()
     else:
-        ani.save('animation_agent.mp4')
+        ani.save('evaluation_20.mp4')
     # del ani
     # del fig
 
@@ -125,11 +128,18 @@ if __name__ == '__main__':
     # =================================
     # Data Load End
     # =================================
-    G = MapParser.no_victim_map(portal_data, room_data)
-    no_victim_rooms = {"achl", "alha", "alhb", "ach", "arha", "arhb", "as"}
-    G = RandomGraphGenerator.add_random_victims(G, no_victim_rooms)
+    # G = MapParser.no_victim_map(portal_data, room_data)
+    # no_victim_rooms = {"achl", "alha", "alhb", "ach", "arha", "arhb", "as"}
+    # G = RandomGraphGenerator.add_random_victims(G, no_victim_rooms)
 
-    plot_graph(G, save=None)
+
+    with open('data\\json\\Falcon_v1.0_Medium_sm.json') as f:
+        data = json.load(f)
+    # env = AsistEnvGym(portal_data, room_data, victim_data, "as", random_victim=False)
+
+    graph = MapParser.parse_json_map_data(data)
+
+    plot_graph(graph, save="Falcon_with_label_medium")
     # animate_graph()
 
     # plot_random_graph()

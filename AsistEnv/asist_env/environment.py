@@ -9,9 +9,9 @@ class MapParser:
 
     @classmethod
     def victim_type_str_to_type(cls, type_str):
-        if type_str == "Green":
+        if type_str in ["Green", "green"]:
             return graph.VictimType.Green
-        if type_str == "Gold":
+        if type_str in ["Gold", "yellow"]:
             return graph.VictimType.Yellow
 
     @classmethod
@@ -47,6 +47,84 @@ class MapParser:
         return g
 
     @classmethod
+    def parse_json_map_data(cls, data):
+        """ Given Json Map Data, construct a Graph
+        :param json_data: The json that contains information about the map
+        :return: the graph
+        """
+        def center(pos1, pos2):
+            return (pos1[0] + pos2[0])/2, (pos1[1] + pos2[1])/2
+
+        def inside(pos, pos1, pos2):
+            if pos1[0] <= pos[0] <= pos2[0] and pos1[1] <= pos[1] <= pos2[1]:
+                return True
+
+        green_victim_list = []
+        yellow_victim_list = []
+
+        for i in data["objects"]:
+            if i["type"] == "green_victim":
+                loc = i["bounds"]["coordinates"][0]
+                x = loc["x"]
+                z = loc["z"]
+                green_victim_list.append((i["id"], (x, z), "green"))
+            if i["type"] == "yellow_victim":
+                loc = i["bounds"]["coordinates"][0]
+                x = loc["x"]
+                z = loc["z"]
+                green_victim_list.append((i["id"], (x, z), "yellow"))
+
+        room_data = []
+        for j in data["locations"]:
+            if "bounds" in j:
+                cord = j["bounds"]["coordinates"]
+                pos1 = (cord[0]["x"], cord[0]["z"])
+                pos2 = (cord[1]["x"], cord[1]["z"])
+                inside_victim = []
+                for gv in green_victim_list:
+                    if inside(gv[1], pos1, pos2):
+                        inside_victim.append(gv[0])
+                for yv in yellow_victim_list:
+                    if inside(yv[1], pos1, pos2):
+                        inside_victim.append(yv[0])
+                room_data.append((j["id"], center(pos1, pos2), inside_victim))
+
+        portal_data = []
+        for k in data["connections"]:
+            cord = k["bounds"]["coordinates"]
+            pos1 = (cord[0]["x"], cord[0]["z"])
+            pos2 = (cord[1]["x"], cord[1]["z"])
+            # portal_data.append((k["id"], center(pos1, pos2), tuple(k["connected_locations"])))
+            portal_data.append(("", center(pos1, pos2), tuple(k["connected_locations"])))
+
+        g = graph.Graph()
+
+        for r in room_data:
+            g.add_room(r[0], location=r[1], victims=r[2])
+
+        for gv in green_victim_list:
+            g.add_victim(cls.victim_type_str_to_type(gv[2]), id=gv[0], location=gv[1])
+        for yv in yellow_victim_list:
+            g.add_victim(cls.victim_type_str_to_type(yv[2]), id=yv[0], location=yv[1])
+
+        for p in portal_data:
+           g.add_portal(p[2], id=p[0], location=p[1])
+
+        for room in g.room_list:
+            g.link_victims_in_room(room, room.victim_list)
+
+        for portal_pair in g.portal_list:
+            g.connect_portal_to_rooms(portal_pair)
+
+        for portal_pair in g.portal_list:
+            g.connected_portals_to_portals(portal_pair)
+
+        g.make_ordered_node_list()
+
+        return g
+
+
+    @classmethod
     def no_victim_map(cls, portal_data, room_data):
         """ Given Map Data, construct a Graph
         :param portal_data: pandas data-frame for portal_data
@@ -76,11 +154,13 @@ class AsistEnvGym(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, portal_data, room_data, victim_data, start_node_id, random_victim=False):
+    # def __init__(self, data, start_node_id, random_victim=False):
         super(AsistEnvGym, self).__init__()
         if random_victim:
             self.graph = MapParser.no_victim_map(portal_data, room_data)
         else:
             self.graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
+            # self.graph = MapParser.parse_json_map_data(data)
         self.start_node_id = start_node_id
         self.curr_pos = self.graph[start_node_id]
         self.prev_pos = None
@@ -94,6 +174,8 @@ class AsistEnvGym(gym.Env):
         self.yellow_decease_cost = 300
         self.cost_bits = 6
         self.agent_speed = [1, 4.3, 5.6][2]
+        # self.room_visited = set()
+        self.no_victim_rooms = {"achl", "alha", "alhb", "ach", "arha", "arhb", "as"}
         # Define action and observation space
         # They must be gym.spaces objects
         # Example when using discrete actions:
@@ -109,8 +191,8 @@ class AsistEnvGym(gym.Env):
         self.action_space = spaces.Discrete(1+1+1+6)
         # self.observation_space = spaces.Box(low=0, high=1, shape=(len(self.graph.nodes_list)+2+self.cost_bits,), dtype=np.int)
         # self.observation_space = spaces.Box(low=0, high=1, shape=(3*5+2+self.cost_bits,), dtype=np.int)
-        # self.observation_space = spaces.Box(low=0, high=1, shape=(7+2+2+1+2+1+3,), dtype=np.int)
-        self.observation_space = spaces.Box(low=0, high=1, shape=(7+2+2+1+1+3,), dtype=np.int)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(7+2+2+1+2+1+3,), dtype=np.int)
+        # self.observation_space = spaces.Box(low=0, high=1, shape=(7+2+2+1+1+3,), dtype=np.int)
 
     def _next_observation_old(self):
         room_observation = np.zeros(len(self.graph.room_list))
@@ -258,8 +340,8 @@ class AsistEnvGym(gym.Env):
 
         time_slot = np.array([min(self.total_cost, self.stop_cost) / self.stop_cost])
 
-        # return np.concatenate([curr_node_idx_list, yellow_victim_list, green_victim_list, mirroring_portal_slot, device_info, time_slot, connecting_portal_list])
-        return np.concatenate([curr_node_idx_list, yellow_victim_list, green_victim_list, mirroring_portal_slot, time_slot, connecting_portal_list])
+        return np.concatenate([curr_node_idx_list, yellow_victim_list, green_victim_list, mirroring_portal_slot, device_info, time_slot, connecting_portal_list])
+        # return np.concatenate([curr_node_idx_list, yellow_victim_list, green_victim_list, mirroring_portal_slot, time_slot, connecting_portal_list])
 
     def _node_observation_debug(self):
         room_observation = [(0, node.id) for node in self.graph.room_list]
@@ -439,6 +521,10 @@ class AsistEnvGym(gym.Env):
             self.curr_pos = action_node
 
             action_node.visited_count += 1
+            # for n in self.graph.neighbors(self.curr_pos):
+            #     if n.type == graph.NodeType.Room and n.id not in self.no_victim_rooms and n.id not in self.room_visited:
+            #         self.room_visited.add(n.id)
+
 
             reward -= edge_cost * self.edge_cost_multiplier
             self.total_cost += edge_cost
@@ -447,6 +533,7 @@ class AsistEnvGym(gym.Env):
                 reward -= triage_cost
                 self.total_cost += triage_cost
                 self.score += triage_score
+
                 reward += triage_score * self.positive_reward_multiplier
 
                 # if action_node.type == graph.VictimType.Yellow and self.total_cost < self.yellow_decease_cost:
@@ -455,10 +542,14 @@ class AsistEnvGym(gym.Env):
             # if action_node.visited_count == 1:
             #     reward += 100
 
-            
+            if action_node.type == graph.NodeType.Portal and action_node.visited_count == 1:
+                reward += 100
+
         if self.graph.no_more_victims() or self.total_cost > self.stop_cost:
         # if self.total_cost > self.stop_cost:
             extra_reward = sum(10 if n.visited_count > 0 else 0 for n in self.graph.ordered_node_list )
+            # extra_reward = 30 * len(self.graph.safe_victim_list)
+
             # all_nodes = [n.visited_count for n in self.graph.ordered_node_list]
             reward += extra_reward
             # print(extra_reward)
@@ -467,6 +558,9 @@ class AsistEnvGym(gym.Env):
 
             if self.graph.no_more_victims():
                 reward += 100
+
+            # if len(self.room_visited) == 24:
+            #     reward += 100
 
             done = True
 
@@ -565,6 +659,7 @@ class AsistEnvGym(gym.Env):
         self.graph.reset()
         # self.graph = self.graph_copy.copy()
         self.total_cost = 0
+        # self.room_visited.clear()
         self.score = 0
         self.prev_pos = None
         self.visit_node_sequence.clear()
@@ -580,9 +675,11 @@ class AsistEnvGym(gym.Env):
         # self.graph = self.graph_copy.copy()
         self.total_cost = 0
         self.score = 0
+        # self.room_visited.clear()
         self.prev_pos = None
         self.visit_node_sequence.clear()
         # return self.get_observation()
+
         return self._next_observation()
 
     def render(self, mode='human', close=False):
