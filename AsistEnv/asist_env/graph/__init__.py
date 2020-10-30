@@ -198,6 +198,17 @@ class Graph(nx.Graph):
                     self.add_edge(victim_1, victim_2, weight=random.randint(random_cost[0], random_cost[1]))
         return room
 
+    def connect_rooms_by_extension(self, extension):
+        rooms = extension[2]
+        for i in range(len(rooms)-1):
+            for j in range(i+1, len(rooms)):
+                room_1 = self.id2node[rooms[i]]
+                room_2 = self.id2node[rooms[j]]
+                dist1 = self.euclidean_distances(room_1.loc, extension[1])
+                dist2 = self.euclidean_distances(room_2.loc, extension[1])
+                self.add_edge(room_1, room_2, weight=dist1+dist2)
+
+
     def connect_portal_to_rooms(self, portal_tuple, random_cost=None):
         """ The second Linkage Function to run
         Connect the portal to the two rooms it is adjacent to

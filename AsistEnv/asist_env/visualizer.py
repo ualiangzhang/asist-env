@@ -133,13 +133,13 @@ if __name__ == '__main__':
     # G = RandomGraphGenerator.add_random_victims(G, no_victim_rooms)
 
 
-    with open('data\\json\\Falcon_v1.0_Medium_sm.json') as f:
+    with open('data/json/Falcon_v1.0_Easy_sm_clean.json') as f:
         data = json.load(f)
     # env = AsistEnvGym(portal_data, room_data, victim_data, "as", random_victim=False)
 
-    graph = MapParser.parse_json_map_data(data)
+    graph = MapParser.parse_json_map_data_new_format(data)
 
-    plot_graph(graph, save="Falcon_with_label_medium")
+    plot_graph(graph, save="Easy_New")
     # animate_graph()
 
     # plot_random_graph()
