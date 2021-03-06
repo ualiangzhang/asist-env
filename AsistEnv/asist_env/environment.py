@@ -225,6 +225,12 @@ class MapParser:
             # g.add_portal(tuple(eval(row["connections"])), is_open, id=row["id"], location=eval(row["loc"]))
             g.add_portal(tuple(eval(row["connections"])), id=row["id"], location=eval(row["loc"]))
 
+        for portal_pair in g.portal_list:
+            g.connect_portal_to_rooms(portal_pair)
+
+        for portal_pair in g.portal_list:
+            g.connected_portals_to_portals(portal_pair)
+
         g.make_ordered_node_list()
 
         return g
