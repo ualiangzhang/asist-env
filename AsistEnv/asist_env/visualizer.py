@@ -126,14 +126,14 @@ def animate_graph_training(animation_sequence, portal_data, room_data, victim_da
 
 
 if __name__ == '__main__':
-    room_data, portal_data, victim_data = read_json.read_json_file(args.difficulty)
-    graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
-
-    file_name = "test_Falcon_" + args.difficulty
-    plot_graph(graph, save=file_name)
-
-    # room_data, portal_data = gen_saturn_map_info.read_json_file()
-    # graph = MapParser.no_victim_map(portal_data, room_data)
+    # room_data, portal_data, victim_data = read_json.read_json_file(args.difficulty)
+    # graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
     #
-    # file_name = "Saturn_map"
+    # file_name = "test_Falcon_" + args.difficulty
     # plot_graph(graph, save=file_name)
+
+    room_data, portal_data = gen_saturn_map_info.read_json_file()
+    graph = MapParser.no_victim_map(portal_data, room_data)
+
+    file_name = "Saturn_map"
+    plot_graph(graph, save=file_name)
