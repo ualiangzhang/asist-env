@@ -96,11 +96,12 @@ class VictimNode(Node):
             return "Dead"
 
 class RoomNode(Node):
-    def __init__(self, id, name, location, victims):
+    def __init__(self, id, name, location, victims, victim_att):
         super().__init__(id, name)
         self.type = NodeType.Room
         self.loc = location
         self.victim_list = victims if victims is not None else []
+        self.victim_att_list = victim_att if victim_att is not None else []
         self.light_on = False
 
     def add_victim(self, victim_id):

@@ -5,7 +5,7 @@ import pandas as pd
 from pathlib import Path
 import networkx as nx
 from graph import RandomGraphGenerator
-from graph.Nodes import NodeType
+from graph.Nodes import NodeType, RoomNode, VictimNode, PortalNode
 from environment import AsistEnvGym
 import json
 import read_json
@@ -29,11 +29,26 @@ def plot_graph(graph, save=None, pop_out=False):
     pos = graph.flip_z(pos)
     pos = graph.clockwise90(pos)
     weight_labels = nx.get_edge_attributes(graph, 'weight')
-    plt.figure(figsize=(18, 27))
+    # attempting to check if attributes are correctly assigned
+    node_labels = {}
+    for node in graph.nodes:
+        # node_labels[node] = graph.nodes[node]
+        if isinstance(node, RoomNode):
+            node_labels[node] = node.victim_att_list # this is how we acces the attributes for the nodes!!
+            node_labels[node].insert(0, str(node))
+        elif isinstance(node, VictimNode):
+            node_labels[node] = node
+        else:
+            node_labels[node] = 'portal'
+    # print(node_labels)
+    # Above is the check ^^
+    # plt.figure(figsize=(18, 27))
+    plt.figure(figsize=(36, 54))
     color_map = graph.better_color()
 
-    nx.draw_networkx(graph, pos, with_labels=True, node_color=color_map)
-    # nx.draw_networkx_edge_labels(graph, pos, edge_labels=weight_labels)
+    nx.draw_networkx(graph, pos, with_labels=False, node_color=color_map)
+    nx.draw_networkx_labels(graph, pos, labels=node_labels)
+    nx.draw_networkx_edge_labels(graph, pos, edge_labels=weight_labels)
 
     if save is None:
         plt.show()
@@ -126,10 +141,15 @@ def animate_graph_training(animation_sequence, portal_data, room_data, victim_da
 
 
 if __name__ == '__main__':
-    room_data, portal_data, victim_data = read_json.read_json_file(args.difficulty)
+    map = 'falcon'
+    #map = 'saturn'
+    room_data, portal_data, victim_data = read_json.read_json_file(args.difficulty, map)
     graph = MapParser.parse_map_data(portal_data, room_data, victim_data)
 
-    file_name = "test_Falcon_" + args.difficulty
+    if map == 'falcon':
+        file_name = "test_Falcon_" + args.difficulty
+    else: 
+        file_name = "test_Saturn"
     plot_graph(graph, save=file_name)
 
     # room_data, portal_data = gen_saturn_map_info.read_json_file()

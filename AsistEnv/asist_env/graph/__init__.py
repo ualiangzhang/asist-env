@@ -143,29 +143,33 @@ class Graph(nx.Graph):
         return node_1, node_2
 
 
-    def add_room(self, id=None, name=None, location=None, victims=None):
+    def add_room(self, id=None, name=None, location=None, victims=None, victim_att=None):
         """ Add Room Node
         :param id: the room id, if id not give, the method will auto generate one
         :param name: name of the room, if any
         :param location: location of the center of the room, tuple of x,z coordinate
         :param victims: None or a list of victim id string
+        :param victim_att: None or a list of victim id's and types
         :return: the created room node
         """
         assert id is None or isinstance(id, str)
         assert name is None or isinstance(name, str)
         assert victims is None or isinstance(victims, list) and \
                all(v is None or isinstance(v, str) for v in victims)
+        assert victim_att is None or isinstance(victim_att, list) and \
+               all(v is None or isinstance(v, str) for v in victim_att)
         assert location is None or isinstance(location, tuple) and len(location) == 2 \
                and all(isinstance(l, float) or isinstance(l, int) for l in location)
 
         node_id = id if id is not None else "R" + str(len(self.room_list))
-        node = RoomNode(node_id, name, location, victims)
+        node = RoomNode(node_id, name, location, victims, victim_att)
 
         self.room_list.append(node)
         self.nodes_list.append(node)
         self.id2node[node_id] = node
 
         return node
+
 
     def link_victims_in_room(self, room, list_of_victim_id, random_cost=None):
         """ The First Linkage Function to run
@@ -207,6 +211,32 @@ class Graph(nx.Graph):
                 dist1 = self.euclidean_distances(room_1.loc, extension[1])
                 dist2 = self.euclidean_distances(room_2.loc, extension[1])
                 self.add_edge(room_1, room_2, weight=dist1+dist2)
+
+
+    def link_rooms(self, connections):
+        """ This links rooms that are connected
+        :param connections: The list of connected rooms
+        """
+        assert isinstance(connections, tuple) and (len(connections) == 2 or len(connections) == 3)
+
+        if len(connections) == 2:
+            room_1_id, room_2_id = connections
+
+            room_1 = self.id2node[room_1_id]
+            room_2 = self.id2node[room_2_id]
+
+            self.add_edge(room_1, room_2, weight=self.euclidean_distances(room_1.loc, room_2.loc))
+
+        else: 
+            room_1_id, room_2_id, room_3_id = connections
+
+            room_1 = self.id2node[room_1_id]
+            room_2 = self.id2node[room_2_id]
+            room_3 = self.id2node[room_3_id]
+
+            self.add_edge(room_1, room_2, weight=self.euclidean_distances(room_1.loc, room_2.loc))
+            self.add_edge(room_1, room_3, weight=self.euclidean_distances(room_1.loc, room_3.loc))
+            self.add_edge(room_2, room_3, weight=self.euclidean_distances(room_2.loc, room_3.loc))
 
 
     def connect_portal_to_rooms(self, portal_tuple, random_cost=None):

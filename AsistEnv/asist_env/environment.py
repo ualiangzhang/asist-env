@@ -22,27 +22,33 @@ class MapParser:
         :param victim_data: pandas data-frame for victim_data
         :return: the graph
         """
+        # This is the main function I think I should change in order to make the nodes compact
         g = graph.Graph()
         for index, row in room_data.iterrows():
-            g.add_room(id=row["id"], location=eval(row["loc"]), victims=eval(row["connections"]))
+            # print(eval(row["connections"]))
+            g.add_room(id=row["id"], location=eval(row["loc"]), victims=eval(row["connections"]), victim_att=eval(row["victim_att"]))
 
-        for index, row in victim_data.iterrows():
-            g.add_victim(cls.victim_type_str_to_type(row["type"]), id=row["id"], location=eval(row["loc"]))
+#        for index, row in victim_data.iterrows():
+#            g.add_victim(cls.victim_type_str_to_type(row["type"]), id=row["id"], location=eval(row["loc"]))
         for index, row in portal_data.iterrows():
+            g.link_rooms(tuple(eval(row["connections"]))) # this is a function to add edges for each room connection
             # is_open = row['isOpen'] == "TRUE"
             # g.add_portal(tuple(eval(row["connections"])), is_open, id=row["id"], location=eval(row["loc"]))
-            g.add_portal(tuple(eval(row["connections"])), id=row["id"], location=eval(row["loc"]))
+#            g.add_portal(tuple(eval(row["connections"])), id=row["id"], location=eval(row["loc"]))
 
-        for room in g.room_list:
-            g.link_victims_in_room(room, room.victim_list)
+#        for room in g.room_list:
+            # print(room.victim_att_list)
+#            g.link_victims_in_room(room, room.victim_list)
 
-        for portal_pair in g.portal_list:
-            g.connect_portal_to_rooms(portal_pair)
+#        for portal_pair in g.portal_list:
+#            g.connect_portal_to_rooms(portal_pair)
 
-        for portal_pair in g.portal_list:
-            g.connected_portals_to_portals(portal_pair)
+#        for portal_pair in g.portal_list:
+#            g.connected_portals_to_portals(portal_pair)
 
         g.make_ordered_node_list()
+
+                
 
         return g
 
